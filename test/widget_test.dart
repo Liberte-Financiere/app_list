@@ -1,30 +1,43 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:apk_list/main.dart';
+import 'package:apk_list/models/apk_model.dart';
+import 'package:apk_list/services/apk_service.dart';
+
+class TestApkService implements ApkService {
+  final List<ApkModel> _data;
+
+  TestApkService(this._data);
+
+  @override
+  Future<List<ApkModel>> fetchApkList() async => _data;
+
+  @override
+  Future<ApkModel?> getApkById(String id) async =>
+      _data.cast<ApkModel?>().firstWhere((e) => e?.id == id, orElse: () => null);
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Affiche la liste des APKs dans le Dashboard', (WidgetTester tester) async {
+    final testApks = [
+      ApkModel(
+        id: 'test-1',
+        name: 'App Test',
+        packageName: 'com.test.app',
+        versionName: '1.0.0',
+        versionCode: 1,
+        sizeInBytes: 1048576,
+        filePath: '/test/app.apk',
+        installDate: DateTime(2026, 1, 1),
+      ),
+    ];
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final service = TestApkService(testApks);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpWidget(ApkApp(apkService: service));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('APK Manager'), findsOneWidget);
+    expect(find.text('App Test'), findsOneWidget);
+    expect(find.text('com.test.app'), findsOneWidget);
   });
 }

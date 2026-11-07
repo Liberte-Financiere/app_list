@@ -1,19 +1,29 @@
 # apk_list
 
-Application Flutter pour la gestion et l'affichage des fichiers APK.
+Application Flutter pour la gestion et l'affichage des fichiers APK, structurée selon une architecture orientée services (SOA / Service-Oriented Architecture).
 
 ## Prérequis
 
 - **Flutter SDK** : `^3.41.0` (Dart `^3.11.0`)
-- **JDK** : OpenJDK 21 (ou version 17 <= Java < 25 pour compatibilité Gradle 8.14)
+- **JDK** : OpenJDK 21 (17 <= Java < 25 pour compatibilité Gradle 8.14)
 - **Android SDK** : Plateforme Android 36 / Build-tools 36.1.0
 
-## Configuration de l'environnement
+## Architecture du projet
 
-Pour éviter les conflits d'incompatibilité entre Gradle 8.14 et le JDK 25 intégré par Android Studio :
+Le code source sous `lib/` est segmenté en couches indépendantes :
 
-```bash
-flutter config --jdk-dir=/usr/lib/jvm/java-21-openjdk-amd64
+```
+lib/
+├── constants/             # Constantes globales et configuration applicative
+│   └── app_constants.dart
+├── models/                # Modèles métiers immuables avec validation stricte
+│   └── apk_model.dart
+├── services/              # Contrats abstraits et implémentations de services
+│   ├── apk_service.dart
+│   └── apk_service_impl.dart
+├── dashboard/             # Couche présentation (Dashboard)
+│   └── dashboard_screen.dart
+└── main.dart              # Point d'entrée et injection des dépendances
 ```
 
 ## Démarrage rapide
@@ -37,9 +47,3 @@ flutter test
 ```bash
 flutter run
 ```
-
-## Structure du projet
-
-- [lib/main.dart](lib/main.dart) : Point d'entrée de l'application.
-- [test/widget_test.dart](test/widget_test.dart) : Tests unitaires et d'interface.
-- [android/](android/) : Configuration et code natif Android.
