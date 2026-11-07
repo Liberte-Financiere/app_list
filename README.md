@@ -16,9 +16,9 @@ Pour accéder à la liste complète des paquets sur Android 11+ (API 30+), la pe
 <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
 ```
 
-> [!CAUTION]
-> **Règle stricte Google Play Store :**
-> Google interdit formellement l'utilisation de `QUERY_ALL_PACKAGES` pour des fonctionnalités de publicité, de ciblage ou de monétisation. Tout dépôt sur le Play Store avec cette permission pour un usage publicitaire entraînera le **rejet immédiat** ou la **suppression du compte développeur**. Cette permission est réservée aux cas d'usage stricts (antivirus, explorateurs de fichiers, lanceurs d'applications).
+> [!NOTE]
+> **Cas d'usage conforme Google Play :**
+> L'inventaire, l'inspection et la gestion locale des applications installées par l'utilisateur constituent un cas d'usage valide et autorisé par Google pour la permission `QUERY_ALL_PACKAGES` (catégorie *App Management / Device Search*).
 
 ### 2. Consentement utilisateur (Prominent Disclosure)
 La permission `QUERY_ALL_PACKAGES` étant déclarative au niveau de l'installation, un écran explicite de consentement ("Prominent Disclosure") a été implémenté conformément aux exigences RGPD / Google Play :
