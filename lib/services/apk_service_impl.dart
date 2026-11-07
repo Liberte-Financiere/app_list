@@ -14,7 +14,7 @@ class ApkServiceImpl implements ApkService {
   @override
   Future<bool> hasUserConsent() async {
     try {
-      final consent = await _prefs.getBool(AppConstants.prefUserConsentKey);
+      final consent = await _prefs.getBool(AppStrings.prefConsentKey);
       return consent ?? false;
     } on Object catch (e) {
       debugPrint('Erreur lors de la lecture du consentement: $e');
@@ -25,7 +25,7 @@ class ApkServiceImpl implements ApkService {
   @override
   Future<void> setUserConsent(bool granted) async {
     try {
-      await _prefs.setBool(AppConstants.prefUserConsentKey, granted);
+      await _prefs.setBool(AppStrings.prefConsentKey, granted);
     } on Object catch (e) {
       throw ApkServiceException(
         'Impossible d\'enregistrer le consentement de l\'utilisateur.',

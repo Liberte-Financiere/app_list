@@ -1,6 +1,6 @@
 # apk_list
 
-Application Flutter pour répertorier, filtrer et lancer les applications installées sur l'appareil Android, avec gestion du consentement utilisateur et architecture orientée services.
+Application Flutter moderne pour répertorier, filtrer et lancer les applications installées sur l'appareil Android, avec architecture modulaire orientée services et design Material 3 soigné.
 
 ## Prérequis
 
@@ -26,20 +26,29 @@ La permission `QUERY_ALL_PACKAGES` étant déclarative au niveau de l'installati
 - Le choix est persisté localement via `SharedPreferencesAsync`.
 - L'autorisation peut être révoquée à tout moment depuis le menu du tableau de bord.
 
-## Architecture
+## Architecture Modulaire & Design System
 
 ```
 lib/
 ├── constants/
-│   └── app_constants.dart       # Titres, clés de persistance et textes de consentement
+│   ├── app_colors.dart          # Palette chromatique sémantique et thématique (clair/sombre)
+│   ├── app_typography.dart      # Typographie hiérarchisée et standardisée
+│   ├── app_strings.dart         # Centralisation des chaînes de caractères (i18n-ready)
+│   ├── app_theme.dart           # Configuration globale Material 3
+│   └── app_constants.dart       # Exporteur et constantes de routage
 ├── models/
-│   └── apk_model.dart           # Modèle immuable (icône, package, version, date d'installation)
+│   └── apk_model.dart           # Modèle métier immuable avec validation stricte
 ├── services/
-│   ├── apk_service.dart         # Contrat abstrait (consentement, listing, lancement)
-│   └── apk_service_impl.dart    # Implémentation via 'installed_apps' et 'shared_preferences'
+│   ├── apk_service.dart         # Contrat d'interface du service
+│   └── apk_service_impl.dart    # Implémentation de production (I/O & cache)
 ├── dashboard/
-│   └── dashboard_screen.dart    # Vue de consentement, recherche, filtrage système et liste
-└── main.dart                    # Point d'entrée avec injection du service
+│   ├── widgets/
+│   │   ├── app_list_item.dart   # Carte d'application moderne avec badges et actions
+│   │   ├── consent_view.dart    # Vue de consentement utilisateur structurée
+│   │   ├── search_filter_bar.dart # Barre de recherche et filtres de paquets
+│   │   └── status_view.dart     # Gestion unifiée des états (chargement, erreur, vide)
+│   └── dashboard_screen.dart    # Orchestrateur du tableau de bord
+└── main.dart                    # Point d'entrée avec injection et thèmes configurés
 ```
 
 ## Démarrage rapide

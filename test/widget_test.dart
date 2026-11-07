@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:apk_list/constants/app_strings.dart';
 import 'package:apk_list/main.dart';
 import 'package:apk_list/models/apk_model.dart';
 import 'package:apk_list/services/apk_service.dart';
@@ -42,8 +43,8 @@ void main() {
     await tester.pumpWidget(ApkApp(apkService: mockService));
     await tester.pumpAndSettle();
 
-    expect(find.text('Autorisation d\'accès aux applications'), findsOneWidget);
-    expect(find.text('Accepter et continuer'), findsOneWidget);
+    expect(find.text(AppStrings.consentTitle), findsOneWidget);
+    expect(find.text(AppStrings.consentButtonAccept), findsOneWidget);
   });
 
   testWidgets('Affiche la liste des applications une fois le consentement accordé', (

@@ -12,7 +12,7 @@ void main() {
   runApp(ApkApp(apkService: apkService));
 }
 
-/// Racine de l'application avec injection des dépendances.
+/// Racine de l'application avec configuration des thèmes et injection du service.
 class ApkApp extends StatelessWidget {
   final ApkService apkService;
 
@@ -21,22 +21,10 @@ class ApkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: AppConstants.appName,
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal,
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal,
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       home: DashboardScreen(apkService: apkService),
     );
