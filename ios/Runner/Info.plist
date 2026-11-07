@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- ========================================================================== -->
+	<!-- NOTE PERMISSIONS IOS (APPLE) :                                             -->
+	<!-- Sur iOS, Apple interdit le scan ou l'inventaire des autres applications    -->
+	<!-- installées via son bac à sable (sandbox). Aucune clé de permission         -->
+	<!-- (Info.plist) n'existe ni n'est applicable pour cette fonctionnalité.       -->
+	<!-- ========================================================================== -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

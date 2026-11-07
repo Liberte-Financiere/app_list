@@ -1,7 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Autorisation requise pour répertorier les paquets installés sur Android 11+ (API 30+) -->
+    <!-- ========================================================================== -->
+    <!-- PERMISSIONS SYSTÈME ANDROID                                                -->
+    <!--                                                                            -->
+    <!-- android.permission.QUERY_ALL_PACKAGES :                                     -->
+    <!-- Requise à partir d'Android 11 (API 30+) pour pouvoir visualiser et lister   -->
+    <!-- l'ensemble des paquets et applications tierces installées sur l'appareil.  -->
+    <!-- Sans cette directive, l'API getInstalledPackages() ne renvoie que l'app    -->
+    <!-- elle-même et certains composants système essentiels.                      -->
+    <!--                                                                            -->
+    <!-- Conformité Play Store : Cas d'usage valide pour les gestionnaires d'apps.   -->
+    <!-- ========================================================================== -->
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
