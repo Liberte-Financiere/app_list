@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Modèle immuable représentant un fichier ou package APK.
+/// Modèle immuable représentant une application installée ou un package APK.
 @immutable
 class ApkModel {
   final String id;
@@ -11,6 +11,8 @@ class ApkModel {
   final int sizeInBytes;
   final String filePath;
   final DateTime installDate;
+  final Uint8List? iconBytes;
+  final bool isSystemApp;
 
   const ApkModel({
     required this.id,
@@ -21,6 +23,8 @@ class ApkModel {
     required this.sizeInBytes,
     required this.filePath,
     required this.installDate,
+    this.iconBytes,
+    this.isSystemApp = false,
   });
 
   /// Factory avec validation stricte des données d'entrée.
@@ -41,8 +45,8 @@ class ApkModel {
     }
 
     final versionName = json['versionName'];
-    if (versionName is! String || versionName.trim().isEmpty) {
-      throw const FormatException('Champ "versionName" invalide ou absent.');
+    if (versionName is! String) {
+      throw const FormatException('Champ "versionName" invalide.');
     }
 
     final versionCode = json['versionCode'];
@@ -56,8 +60,8 @@ class ApkModel {
     }
 
     final filePath = json['filePath'];
-    if (filePath is! String || filePath.trim().isEmpty) {
-      throw const FormatException('Champ "filePath" invalide ou absent.');
+    if (filePath is! String) {
+      throw const FormatException('Champ "filePath" invalide.');
     }
 
     final installDateRaw = json['installDate'];
@@ -76,11 +80,12 @@ class ApkModel {
       id: id.trim(),
       name: name.trim(),
       packageName: packageName.trim(),
-      versionName: versionName.trim(),
+      versionName: versionName.trim().isEmpty ? 'Inconnue' : versionName.trim(),
       versionCode: versionCode,
       sizeInBytes: sizeInBytes,
       filePath: filePath.trim(),
       installDate: installDate,
+      isSystemApp: json['isSystemApp'] == true,
     );
   }
 
@@ -93,10 +98,12 @@ class ApkModel {
         'sizeInBytes': sizeInBytes,
         'filePath': filePath,
         'installDate': installDate.toIso8601String(),
+        'isSystemApp': isSystemApp,
       };
 
   /// Retourne la taille formatée lisiblement.
   String get formattedSize {
+    if (sizeInBytes <= 0) return 'Taille non renseignée';
     if (sizeInBytes < 1024) return '$sizeInBytes o';
     if (sizeInBytes < 1024 * 1024) {
       return '${(sizeInBytes / 1024).toStringAsFixed(1)} Ko';
@@ -113,6 +120,8 @@ class ApkModel {
     int? sizeInBytes,
     String? filePath,
     DateTime? installDate,
+    Uint8List? iconBytes,
+    bool? isSystemApp,
   }) {
     return ApkModel(
       id: id ?? this.id,
@@ -123,6 +132,8 @@ class ApkModel {
       sizeInBytes: sizeInBytes ?? this.sizeInBytes,
       filePath: filePath ?? this.filePath,
       installDate: installDate ?? this.installDate,
+      iconBytes: iconBytes ?? this.iconBytes,
+      isSystemApp: isSystemApp ?? this.isSystemApp,
     );
   }
 
@@ -139,5 +150,5 @@ class ApkModel {
 
   @override
   String toString() =>
-      'ApkModel(id: $id, name: $name, packageName: $packageName, version: $versionName)';
+      'ApkModel(id: $id, name: $name, packageName: $packageName, version: $versionName, isSystem: $isSystemApp)';
 }

@@ -1,79 +1,159 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
+import 'package:installed_apps/installed_apps.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'apk_service.dart';
+import '../constants/app_constants.dart';
 import '../models/apk_model.dart';
 
-/// Implémentation du service APK avec gestion rigoureuse des erreurs.
+/// Implémentation de production interagissant avec les packages Android réels.
 class ApkServiceImpl implements ApkService {
-  final List<ApkModel> _cachedApks;
+  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
 
-  ApkServiceImpl({List<ApkModel>? initialApks})
-      : _cachedApks = initialApks ?? _generateInitialData();
+  @override
+  Future<bool> hasUserConsent() async {
+    try {
+      final consent = await _prefs.getBool(AppConstants.prefUserConsentKey);
+      return consent ?? false;
+    } on Object catch (e) {
+      debugPrint('Erreur lors de la lecture du consentement: $e');
+      return false;
+    }
+  }
 
-  static List<ApkModel> _generateInitialData() {
-    return [
+  @override
+  Future<void> setUserConsent(bool granted) async {
+    try {
+      await _prefs.setBool(AppConstants.prefUserConsentKey, granted);
+    } on Object catch (e) {
+      throw ApkServiceException(
+        'Impossible d\'enregistrer le consentement de l\'utilisateur.',
+        e,
+      );
+    }
+  }
+
+  @override
+  Future<List<ApkModel>> fetchInstalledApps({bool includeSystemApps = false}) async {
+    // Si la plateforme n'est pas Android (ex. tests unitaires ou Linux Desktop en dev)
+    if (kIsWeb || !Platform.isAndroid) {
+      return _getFallbackData(includeSystemApps: includeSystemApps);
+    }
+
+    try {
+      final List<AppInfo> apps = await InstalledApps.getInstalledApps(
+        excludeSystemApps: !includeSystemApps,
+        excludeNonLaunchableApps: true,
+        withIcon: true,
+      );
+
+      final List<ApkModel> apkList = apps.map((app) {
+        final installTimestamp = app.installedTimestamp;
+        final installDate = installTimestamp > 0
+            ? DateTime.fromMillisecondsSinceEpoch(installTimestamp)
+            : DateTime.now();
+
+        return ApkModel(
+          id: app.packageName,
+          name: app.name.trim().isEmpty ? app.packageName : app.name,
+          packageName: app.packageName,
+          versionName: app.versionName.trim().isEmpty ? 'Inconnue' : app.versionName,
+          versionCode: app.versionCode,
+          sizeInBytes: 0,
+          filePath: '',
+          installDate: installDate,
+          iconBytes: app.icon,
+          isSystemApp: app.isSystemApp,
+        );
+      }).toList();
+
+      // Tri alphabétique par nom d'application
+      apkList.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return List.unmodifiable(apkList);
+    } on Object catch (e) {
+      throw ApkServiceException(
+        'Erreur lors de la récupération des applications installées.',
+        e,
+      );
+    }
+  }
+
+  @override
+  Future<bool> launchApp(String packageName) async {
+    if (packageName.trim().isEmpty) {
+      throw const ApkServiceException('Nom de package vide ou invalide.');
+    }
+
+    if (kIsWeb || !Platform.isAndroid) {
+      debugPrint('Simulation du lancement de $packageName sur cette plateforme.');
+      return true;
+    }
+
+    try {
+      final result = await InstalledApps.startApp(packageName);
+      return result ?? false;
+    } on Object catch (e) {
+      throw ApkServiceException('Échec du lancement de l\'application $packageName.', e);
+    }
+  }
+
+  @override
+  Future<void> openAppSettings(String packageName) async {
+    if (packageName.trim().isEmpty) {
+      throw const ApkServiceException('Nom de package vide ou invalide.');
+    }
+
+    if (kIsWeb || !Platform.isAndroid) {
+      debugPrint('Simulation de l\'ouverture des paramètres pour $packageName.');
+      return;
+    }
+
+    try {
+      InstalledApps.openSettings(packageName);
+    } on Object catch (e) {
+      throw ApkServiceException(
+        'Échec de l\'ouverture des paramètres pour $packageName.',
+        e,
+      );
+    }
+  }
+
+  List<ApkModel> _getFallbackData({required bool includeSystemApps}) {
+    final list = [
       ApkModel(
-        id: 'apk-1',
-        name: 'Caméra Pro',
-        packageName: 'com.example.camera.pro',
-        versionName: '2.4.1',
-        versionCode: 241,
-        sizeInBytes: 34500000,
-        filePath: '/storage/emulated/0/Download/camera_pro.apk',
-        installDate: DateTime.now().subtract(const Duration(days: 2)),
+        id: 'com.whatsapp',
+        name: 'WhatsApp',
+        packageName: 'com.whatsapp',
+        versionName: '2.24.1.6',
+        versionCode: 224016,
+        sizeInBytes: 42000000,
+        filePath: '/data/app/com.whatsapp.apk',
+        installDate: DateTime.now().subtract(const Duration(days: 30)),
       ),
       ApkModel(
-        id: 'apk-2',
-        name: 'Lecteur Audio Hi-Fi',
-        packageName: 'com.example.audio.player',
-        versionName: '1.0.8',
-        versionCode: 108,
-        sizeInBytes: 15200000,
-        filePath: '/storage/emulated/0/Download/audio_player.apk',
-        installDate: DateTime.now().subtract(const Duration(days: 5)),
+        id: 'com.spotify.music',
+        name: 'Spotify',
+        packageName: 'com.spotify.music',
+        versionName: '8.9.10',
+        versionCode: 8910,
+        sizeInBytes: 65000000,
+        filePath: '/data/app/com.spotify.music.apk',
+        installDate: DateTime.now().subtract(const Duration(days: 15)),
       ),
-      ApkModel(
-        id: 'apk-3',
-        name: 'Explorateur Fichiers',
-        packageName: 'com.example.file.explorer',
-        versionName: '3.1.0',
-        versionCode: 310,
-        sizeInBytes: 8900000,
-        filePath: '/storage/emulated/0/Download/file_explorer.apk',
-        installDate: DateTime.now().subtract(const Duration(days: 10)),
-      ),
+      if (includeSystemApps)
+        ApkModel(
+          id: 'com.android.settings',
+          name: 'Paramètres Système',
+          packageName: 'com.android.settings',
+          versionName: '14.0',
+          versionCode: 34,
+          sizeInBytes: 12000000,
+          filePath: '/system/priv-app/Settings.apk',
+          installDate: DateTime.now().subtract(const Duration(days: 180)),
+          isSystemApp: true,
+        ),
     ];
-  }
-
-  @override
-  Future<List<ApkModel>> fetchApkList() async {
-    try {
-      // Simulation d'une latence d'I/O ou d'appel asynchrone sécurisé
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      return List.unmodifiable(_cachedApks);
-    } on Object catch (e) {
-      throw ApkServiceException(
-        'Échec lors de la récupération de la liste des APKs.',
-        e,
-      );
-    }
-  }
-
-  @override
-  Future<ApkModel?> getApkById(String id) async {
-    if (id.trim().isEmpty) {
-      throw const ApkServiceException('Identifiant invalide fourni.');
-    }
-
-    try {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      return _cachedApks.cast<ApkModel?>().firstWhere(
-            (apk) => apk?.id == id.trim(),
-            orElse: () => null,
-          );
-    } on Object catch (e) {
-      throw ApkServiceException(
-        'Échec lors de la recherche de l\'APK avec l\'identifiant $id.',
-        e,
-      );
-    }
+    return List.unmodifiable(list);
   }
 }

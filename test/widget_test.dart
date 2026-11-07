@@ -3,41 +3,73 @@ import 'package:apk_list/main.dart';
 import 'package:apk_list/models/apk_model.dart';
 import 'package:apk_list/services/apk_service.dart';
 
-class TestApkService implements ApkService {
-  final List<ApkModel> _data;
+class MockApkService implements ApkService {
+  bool _consent;
+  final List<ApkModel> _apps;
 
-  TestApkService(this._data);
+  MockApkService({
+    bool initialConsent = false,
+    List<ApkModel>? apps,
+  })  : _consent = initialConsent,
+        _apps = apps ?? [];
 
   @override
-  Future<List<ApkModel>> fetchApkList() async => _data;
+  Future<bool> hasUserConsent() async => _consent;
 
   @override
-  Future<ApkModel?> getApkById(String id) async =>
-      _data.cast<ApkModel?>().firstWhere((e) => e?.id == id, orElse: () => null);
+  Future<void> setUserConsent(bool granted) async {
+    _consent = granted;
+  }
+
+  @override
+  Future<List<ApkModel>> fetchInstalledApps({bool includeSystemApps = false}) async {
+    if (!_consent) return [];
+    if (includeSystemApps) return _apps;
+    return _apps.where((app) => !app.isSystemApp).toList();
+  }
+
+  @override
+  Future<bool> launchApp(String packageName) async => true;
+
+  @override
+  Future<void> openAppSettings(String packageName) async {}
 }
 
 void main() {
-  testWidgets('Affiche la liste des APKs dans le Dashboard', (WidgetTester tester) async {
-    final testApks = [
-      ApkModel(
-        id: 'test-1',
-        name: 'App Test',
-        packageName: 'com.test.app',
-        versionName: '1.0.0',
-        versionCode: 1,
-        sizeInBytes: 1048576,
-        filePath: '/test/app.apk',
-        installDate: DateTime(2026, 1, 1),
-      ),
-    ];
+  testWidgets('Demande le consentement si non accordé au démarrage', (WidgetTester tester) async {
+    final mockService = MockApkService(initialConsent: false);
 
-    final service = TestApkService(testApks);
-
-    await tester.pumpWidget(ApkApp(apkService: service));
+    await tester.pumpWidget(ApkApp(apkService: mockService));
     await tester.pumpAndSettle();
 
-    expect(find.text('APK Manager'), findsOneWidget);
-    expect(find.text('App Test'), findsOneWidget);
-    expect(find.text('com.test.app'), findsOneWidget);
+    expect(find.text('Autorisation d\'accès aux applications'), findsOneWidget);
+    expect(find.text('Accepter et continuer'), findsOneWidget);
+  });
+
+  testWidgets('Affiche la liste des applications une fois le consentement accordé', (
+    WidgetTester tester,
+  ) async {
+    final testApp = ApkModel(
+      id: 'com.example.app',
+      name: 'Application Test',
+      packageName: 'com.example.app',
+      versionName: '1.2.3',
+      versionCode: 12,
+      sizeInBytes: 5000000,
+      filePath: '/data/app/test.apk',
+      installDate: DateTime(2026, 1, 1),
+    );
+
+    final mockService = MockApkService(
+      initialConsent: true,
+      apps: [testApp],
+    );
+
+    await tester.pumpWidget(ApkApp(apkService: mockService));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Application Test'), findsOneWidget);
+    expect(find.text('com.example.app'), findsOneWidget);
+    expect(find.text('v1.2.3'), findsOneWidget);
   });
 }
