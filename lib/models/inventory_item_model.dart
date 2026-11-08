@@ -14,6 +14,7 @@ class InventoryItemModel {
   final int versionCode;
   final int sizeInBytes;
   final int targetSdkVersion;
+  final String installerPackageName;
   final DateTime installedAt;
   final DateTime? lastUpdatedAt;
   final DateTime? syncedAt;
@@ -29,6 +30,7 @@ class InventoryItemModel {
     required this.versionCode,
     required this.sizeInBytes,
     required this.targetSdkVersion,
+    this.installerPackageName = '',
     required this.installedAt,
     this.lastUpdatedAt,
     this.syncedAt,
@@ -51,6 +53,7 @@ class InventoryItemModel {
       versionCode: apk.versionCode,
       sizeInBytes: apk.sizeInBytes,
       targetSdkVersion: apk.targetSdkVersion,
+      installerPackageName: apk.installerPackageName,
       installedAt: apk.installDate,
       lastUpdatedAt: apk.lastUpdateDate,
       syncedAt: DateTime.now(),
@@ -108,6 +111,7 @@ class InventoryItemModel {
       versionCode: json['versionCode'] ?? json['version_code'] ?? 0,
       sizeInBytes: json['sizeInBytes'] ?? json['size_in_bytes'] ?? 0,
       targetSdkVersion: json['targetSdkVersion'] ?? json['target_sdk_version'] ?? 0,
+      installerPackageName: (json['installerPackageName'] ?? json['installer_package_name'] ?? '').toString(),
       installedAt: installedAt,
       lastUpdatedAt: lastUpdate,
       syncedAt: synced,
@@ -125,6 +129,7 @@ class InventoryItemModel {
         'version_code': versionCode,
         'size_in_bytes': sizeInBytes,
         'target_sdk_version': targetSdkVersion,
+        'installer_package_name': installerPackageName,
         'installed_at': installedAt.toIso8601String(),
         'last_updated_at': lastUpdatedAt?.toIso8601String(),
         'synced_at': syncedAt?.toIso8601String(),

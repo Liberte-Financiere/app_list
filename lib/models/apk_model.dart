@@ -15,6 +15,9 @@ class ApkModel {
   final int targetSdkVersion;
   final Uint8List? iconBytes;
   final bool isSystemApp;
+  final String installerPackageName;
+  final List<String> grantedPermissions;
+  final List<String> declaredPermissions;
 
   const ApkModel({
     required this.id,
@@ -29,6 +32,9 @@ class ApkModel {
     this.targetSdkVersion = 0,
     this.iconBytes,
     this.isSystemApp = false,
+    this.installerPackageName = '',
+    this.grantedPermissions = const [],
+    this.declaredPermissions = const [],
   });
 
   /// Factory avec validation stricte des données d'entrée.
@@ -97,6 +103,13 @@ class ApkModel {
       lastUpdateDate: lastUpdateDate,
       targetSdkVersion: json['targetSdkVersion'] is int ? json['targetSdkVersion'] as int : 0,
       isSystemApp: json['isSystemApp'] == true,
+      installerPackageName: json['installerPackageName'] is String ? (json['installerPackageName'] as String).trim() : '',
+      grantedPermissions: json['grantedPermissions'] is List
+          ? (json['grantedPermissions'] as List).whereType<String>().map((e) => e.trim()).toList()
+          : const [],
+      declaredPermissions: json['declaredPermissions'] is List
+          ? (json['declaredPermissions'] as List).whereType<String>().map((e) => e.trim()).toList()
+          : const [],
     );
   }
 
@@ -112,7 +125,31 @@ class ApkModel {
         'lastUpdateDate': lastUpdateDate?.toIso8601String(),
         'targetSdkVersion': targetSdkVersion,
         'isSystemApp': isSystemApp,
+        'installerPackageName': installerPackageName,
+        'grantedPermissions': grantedPermissions,
+        'declaredPermissions': declaredPermissions,
       };
+
+  /// Retourne le nom lisible du magasin ou de la source d'installation.
+  String get installerDisplayName {
+    if (installerPackageName.isEmpty) return 'Inconnu / APK direct';
+    final pkg = installerPackageName.toLowerCase();
+    if (pkg == 'com.android.vending') return 'Google Play Store';
+    if (pkg.contains('phoenix')) return 'Navigateur Phoenix';
+    if (pkg == 'com.google.android.packageinstaller' ||
+        pkg == 'com.android.packageinstaller') {
+      return 'Installateur de paquets (APK)';
+    }
+    if (pkg.contains('amazon')) return 'Amazon Appstore';
+    if (pkg.contains('aurora')) return 'Aurora Store';
+    if (pkg.contains('fdroid') || pkg.contains('f_droid')) return 'F-Droid';
+    if (pkg.contains('huawei') || pkg.contains('appgallery')) {
+      return 'Huawei AppGallery';
+    }
+    if (pkg.contains('sec.android.app.samsungapps')) return 'Galaxy Store';
+    if (pkg.contains('xiaomi') || pkg.contains('mipicks')) return 'GetApps (Xiaomi)';
+    return installerPackageName;
+  }
 
   /// Retourne la taille formatée lisiblement (ex: 24.5 Mo).
   String get formattedSize {
@@ -140,6 +177,9 @@ class ApkModel {
     int? targetSdkVersion,
     Uint8List? iconBytes,
     bool? isSystemApp,
+    String? installerPackageName,
+    List<String>? grantedPermissions,
+    List<String>? declaredPermissions,
   }) {
     return ApkModel(
       id: id ?? this.id,
@@ -154,6 +194,9 @@ class ApkModel {
       targetSdkVersion: targetSdkVersion ?? this.targetSdkVersion,
       iconBytes: iconBytes ?? this.iconBytes,
       isSystemApp: isSystemApp ?? this.isSystemApp,
+      installerPackageName: installerPackageName ?? this.installerPackageName,
+      grantedPermissions: grantedPermissions ?? this.grantedPermissions,
+      declaredPermissions: declaredPermissions ?? this.declaredPermissions,
     );
   }
 

@@ -17,6 +17,9 @@ void main() {
         lastUpdateDate: now.add(const Duration(days: 1)),
         targetSdkVersion: 34,
         isSystemApp: false,
+        installerPackageName: 'com.android.vending',
+        grantedPermissions: const ['android.permission.INTERNET'],
+        declaredPermissions: const ['android.permission.INTERNET', 'android.permission.CAMERA'],
       );
 
       final json = model.toJson();
@@ -34,6 +37,58 @@ void main() {
       expect(fromJson.installDate, now);
       expect(fromJson.lastUpdateDate, now.add(const Duration(days: 1)));
       expect(fromJson.isSystemApp, false);
+      expect(fromJson.installerPackageName, 'com.android.vending');
+      expect(fromJson.installerDisplayName, 'Google Play Store');
+      expect(fromJson.grantedPermissions, ['android.permission.INTERNET']);
+      expect(fromJson.declaredPermissions, ['android.permission.INTERNET', 'android.permission.CAMERA']);
+    });
+
+    test('Résolution du nom du magasin d\'installation', () {
+      final now = DateTime.now();
+      expect(
+        ApkModel(
+          id: '1',
+          name: 'A',
+          packageName: 'p',
+          versionName: '1',
+          versionCode: 1,
+          sizeInBytes: 0,
+          filePath: '',
+          installDate: now,
+          installerPackageName: 'com.android.vending',
+        ).installerDisplayName,
+        'Google Play Store',
+      );
+
+      expect(
+        ApkModel(
+          id: '2',
+          name: 'B',
+          packageName: 'p',
+          versionName: '1',
+          versionCode: 1,
+          sizeInBytes: 0,
+          filePath: '',
+          installDate: now,
+          installerPackageName: 'com.transsion.phoenix',
+        ).installerDisplayName,
+        'Navigateur Phoenix',
+      );
+
+      expect(
+        ApkModel(
+          id: '3',
+          name: 'C',
+          packageName: 'p',
+          versionName: '1',
+          versionCode: 1,
+          sizeInBytes: 0,
+          filePath: '',
+          installDate: now,
+          installerPackageName: '',
+        ).installerDisplayName,
+        'Inconnu / APK direct',
+      );
     });
 
     test('Levée d\'exception sur JSON invalide', () {

@@ -18,6 +18,7 @@ void main() {
         lastUpdateDate: now.add(const Duration(days: 1)),
         targetSdkVersion: 34,
         isSystemApp: false,
+        installerPackageName: 'com.transsion.phoenix',
       );
 
       final item = InventoryItemModel.fromApkModel(
@@ -36,6 +37,7 @@ void main() {
       expect(item.versionCode, 885000);
       expect(item.sizeInBytes, 65000000);
       expect(item.targetSdkVersion, 34);
+      expect(item.installerPackageName, 'com.transsion.phoenix');
 
       final json = item.toJson();
       final fromJson = InventoryItemModel.fromJson(json);
@@ -44,6 +46,7 @@ void main() {
       expect(fromJson.userLabel, 'User 2');
       expect(fromJson.deviceModel, 'Google Pixel 8');
       expect(fromJson.packageName, 'com.spotify.music');
+      expect(fromJson.installerPackageName, 'com.transsion.phoenix');
     });
 
     test('Levée d\'exception sur JSON incomplet', () {

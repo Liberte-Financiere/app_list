@@ -265,9 +265,11 @@ class AppListItem extends StatelessWidget {
               const Divider(height: 1),
               const SizedBox(height: 14),
               _buildDetailRow('Taille du package APK', app.formattedSize, Icons.storage_rounded),
+              _buildDetailRow('Source d\'installation', app.installerDisplayName, Icons.storefront_rounded),
               _buildDetailRow('Version installée', 'v${app.versionName} (${app.versionCode})', Icons.tag_rounded),
               if (app.targetSdkVersion > 0)
                 _buildDetailRow('SDK Android cible', 'API ${app.targetSdkVersion}', Icons.android_rounded),
+              _buildPermissionsRow(context),
               _buildDetailRow(
                 'Date d\'installation',
                 '${app.installDate.day.toString().padLeft(2, '0')}/${app.installDate.month.toString().padLeft(2, '0')}/${app.installDate.year}',
@@ -317,6 +319,128 @@ class AppListItem extends StatelessWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPermissionsRow(BuildContext context) {
+    final grantedCount = app.grantedPermissions.length;
+    final totalCount = app.declaredPermissions.length;
+    final text = totalCount == 0
+        ? 'Aucune permission demandée'
+        : '$grantedCount accordée(s) sur $totalCount déclarée(s)';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.security_rounded, size: 18, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Permissions système',
+                    style: AppTypography.labelSmall.copyWith(color: Colors.grey[600])),
+                const SizedBox(height: 1),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: AppTypography.bodySmall
+                            .copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    if (totalCount > 0)
+                      InkWell(
+                        onTap: () => _showPermissionsDialog(context),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          child: Text(
+                            'Voir le détail',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionsDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('Permissions (${app.name})', style: AppTypography.titleMedium),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: app.declaredPermissions.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (_, index) {
+                final perm = app.declaredPermissions[index];
+                final isGranted = app.grantedPermissions.contains(perm);
+                final simpleName = perm.replaceFirst('android.permission.', '');
+
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    isGranted ? Icons.check_circle_rounded : Icons.cancel_outlined,
+                    color: isGranted ? Colors.green : Colors.red[400],
+                    size: 20,
+                  ),
+                  title: Text(
+                    simpleName,
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: isGranted ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  subtitle: Text(
+                    perm,
+                    style: AppTypography.labelSmall.copyWith(fontSize: 10, color: Colors.grey),
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isGranted ? Colors.green.withAlpha(25) : Colors.red.withAlpha(25),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isGranted ? 'Accordée' : 'Refusée',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isGranted ? Colors.green[800] : Colors.red[800],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Fermer'),
+            ),
+          ],
         );
       },
     );

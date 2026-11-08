@@ -9,8 +9,10 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
   - Taille réelle du binaire APK sur le stockage (`sizeInBytes` formaté en Ko/Mo/Go).
   - Date d'installation initiale (`firstInstallTime`) et date de dernière mise à jour (`lastUpdateTime`).
   - Niveau de SDK Android cible (`targetSdkVersion`) et chemin absolu du fichier APK (`sourceDir`).
+  - Source d'installation identifiée (`installerPackageName` / `installerDisplayName`) : Google Play Store, Navigateur Phoenix, Sideload APK direct, Amazon Appstore, etc.
+  - Audit des permissions du manifest : distinction précise entre permissions déclarées et permissions effectivement accordées (`grantedPermissions`).
 - **Canal natif Android optimisé** : Extraction multithreadée via `MethodChannel` (`Executors.newFixedThreadPool`) pour éviter tout blocage du thread principal UI.
-- **Fiche modale d'inspection** : Affichage détaillé par application avec actions rapides (lancement, accès aux paramètres système).
+- **Fiche modale d'inspection** : Affichage détaillé par application avec liste interactive des permissions, source d'installation et actions rapides (lancement, accès aux paramètres système).
 - **Attribution atomique des utilisateurs & Modèles d'appareils** :
   - Identification automatique de chaque terminal connecté (`User 1`, `User 2`, etc.) via séquence PostgreSQL `SERIAL` dans `registered_devices`.
   - Détection native du fabricant et modèle (`Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`).

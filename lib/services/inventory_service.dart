@@ -27,6 +27,7 @@ class InventoryService {
 
     await conn.execute('ALTER TABLE device_inventory ADD COLUMN IF NOT EXISTS user_label TEXT;');
     await conn.execute('ALTER TABLE device_inventory ADD COLUMN IF NOT EXISTS device_model TEXT;');
+    await conn.execute('ALTER TABLE device_inventory ADD COLUMN IF NOT EXISTS installer_package_name TEXT;');
   }
 
   /// Synchronise en lot les éléments d'inventaire dans une transaction ACID.
@@ -41,9 +42,9 @@ class InventoryService {
     const upsertSql = '''
       INSERT INTO device_inventory (
           device_id, user_label, device_model, package_name, app_name, version_name, version_code,
-          size_in_bytes, target_sdk_version, installed_at, last_updated_at, synced_at
+          size_in_bytes, target_sdk_version, installer_package_name, installed_at, last_updated_at, synced_at
       ) VALUES (
-          \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, NOW()
+          \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, NOW()
       )
       ON CONFLICT (device_id, package_name) DO UPDATE SET
           user_label = EXCLUDED.user_label,
@@ -53,6 +54,7 @@ class InventoryService {
           version_code = EXCLUDED.version_code,
           size_in_bytes = EXCLUDED.size_in_bytes,
           target_sdk_version = EXCLUDED.target_sdk_version,
+          installer_package_name = EXCLUDED.installer_package_name,
           last_updated_at = EXCLUDED.last_updated_at,
           synced_at = NOW();
     ''';
@@ -71,6 +73,7 @@ class InventoryService {
             item.versionCode,
             item.sizeInBytes,
             item.targetSdkVersion,
+            item.installerPackageName,
             item.installedAt.toUtc(),
             item.lastUpdatedAt?.toUtc(),
           ],

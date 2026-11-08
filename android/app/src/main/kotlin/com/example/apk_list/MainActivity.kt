@@ -72,10 +72,10 @@ class MainActivity : FlutterActivity() {
                         }
 
                         val pkgInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(0))
+                            pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()))
                         } else {
                             @Suppress("DEPRECATION")
-                            pm.getPackageInfo(pkgName, 0)
+                            pm.getPackageInfo(pkgName, PackageManager.GET_PERMISSIONS)
                         }
 
                         val sourceDir = appInfo.sourceDir
@@ -90,12 +90,39 @@ class MainActivity : FlutterActivity() {
                             0L
                         }
 
+                        // Extraction de la source d'installation (Play Store, Phoenix, etc.)
+                        val installerPackageName: String? = try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                val installSource = pm.getInstallSourceInfo(pkgName)
+                                installSource.installingPackageName ?: installSource.initiatingPackageName ?: installSource.originatingPackageName
+                            } else {
+                                @Suppress("DEPRECATION")
+                                pm.getInstallerPackageName(pkgName)
+                            }
+                        } catch (_: Exception) {
+                            null
+                        }
+
+                        // Extraction et classification des permissions déclarées et accordées
+                        val requestedPermissions = pkgInfo.requestedPermissions ?: emptyArray()
+                        val requestedFlags = pkgInfo.requestedPermissionsFlags ?: IntArray(0)
+                        val grantedPermissions = ArrayList<String>()
+
+                        for (i in requestedPermissions.indices) {
+                            if (i < requestedFlags.size && (requestedFlags[i] and android.content.pm.PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0) {
+                                grantedPermissions.add(requestedPermissions[i])
+                            }
+                        }
+
                         val itemDetails = HashMap<String, Any>()
                         itemDetails["sizeInBytes"] = sizeInBytes
                         itemDetails["firstInstallTime"] = pkgInfo.firstInstallTime
                         itemDetails["lastUpdateTime"] = pkgInfo.lastUpdateTime
                         itemDetails["targetSdkVersion"] = appInfo.targetSdkVersion
                         itemDetails["sourceDir"] = sourceDir ?: ""
+                        itemDetails["installerPackageName"] = installerPackageName ?: ""
+                        itemDetails["grantedPermissions"] = grantedPermissions
+                        itemDetails["declaredPermissions"] = requestedPermissions.toList()
 
                         detailsMap[pkgName] = itemDetails
                     } catch (_: PackageManager.NameNotFoundException) {
