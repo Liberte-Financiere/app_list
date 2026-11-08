@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,13 +27,15 @@ enum NeonSyncStatus {
   error,
 }
 
-/// État réactif de synchronisation avec horodatage et métadonnées.
+/// État réactif de synchronisation avec horodatage et métadonnées d'utilisateur.
 class NeonSyncState {
   final NeonSyncStatus status;
   final DateTime? lastSyncTime;
   final int syncedCount;
   final String? errorMessage;
   final String? deviceId;
+  final String? userLabel;
+  final String? deviceModel;
 
   const NeonSyncState({
     this.status = NeonSyncStatus.idle,
@@ -39,6 +43,8 @@ class NeonSyncState {
     this.syncedCount = 0,
     this.errorMessage,
     this.deviceId,
+    this.userLabel,
+    this.deviceModel,
   });
 
   String get formattedTime {
@@ -51,7 +57,7 @@ class NeonSyncState {
 }
 
 /// Service gérant la synchronisation automatique en arrière-plan avec Neon PostgreSQL.
-/// Zéro information sensible codée en dur : extraction dynamique depuis les variables d'environnement.
+/// Gère l'attribution atomique de "User 1", "User 2" et le modèle matériel du terminal.
 class NeonSyncService {
   SharedPreferencesAsync? _prefs;
   final String host;
@@ -61,6 +67,9 @@ class NeonSyncService {
   final int port;
   final ValueNotifier<NeonSyncState> stateNotifier =
       ValueNotifier(const NeonSyncState());
+
+  static const MethodChannel _nativeChannel =
+      MethodChannel('com.example.apk_list/native_details');
 
   NeonSyncService({
     SharedPreferencesAsync? prefs,
@@ -158,6 +167,21 @@ class NeonSyncService {
   bool get isConfigured =>
       host.trim().isNotEmpty && user.trim().isNotEmpty && password.trim().isNotEmpty;
 
+  /// Récupère les métadonnées matérielles de l'appareil (Marque/Modèle et version OS).
+  Future<(String deviceModel, String osVersion)> getDeviceHardwareInfo() async {
+    if (kIsWeb || !Platform.isAndroid) {
+      return ('Linux Desktop (Dev)', 'Linux');
+    }
+    try {
+      final info = await _nativeChannel.invokeMapMethod<String, String>('getDeviceInfo');
+      final model = info?['fullName'] ?? 'Android Device';
+      final os = info?['osVersion'] ?? 'Android';
+      return (model, os);
+    } catch (_) {
+      return ('Android Device', 'Android');
+    }
+  }
+
   /// Récupère ou génère un identifiant unique anonyme (UUID v4) pour ce terminal.
   Future<String> getOrCreateDeviceId() async {
     const deviceIdKey = 'anonymous_device_uuid';
@@ -193,7 +217,7 @@ class NeonSyncService {
     }
   }
 
-  /// Synchronise la liste des applications dans la base Neon avec un UPSERT transactionnel.
+  /// Synchronise la liste des applications dans la base Neon avec attribution atomique de User X.
   Future<int> syncApps(List<ApkModel> apps) async {
     if (!isConfigured) {
       stateNotifier.value = const NeonSyncState(
@@ -214,9 +238,12 @@ class NeonSyncService {
       lastSyncTime: stateNotifier.value.lastSyncTime,
       syncedCount: stateNotifier.value.syncedCount,
       deviceId: stateNotifier.value.deviceId,
+      userLabel: stateNotifier.value.userLabel,
+      deviceModel: stateNotifier.value.deviceModel,
     );
 
     final deviceId = await getOrCreateDeviceId();
+    final (hardwareModel, osVersion) = await getDeviceHardwareInfo();
     Connection? conn;
 
     try {
@@ -237,11 +264,42 @@ class NeonSyncService {
         ),
       );
 
-      // Initialisation idempotente de la table Neon
+      // Table des terminaux enregistrés pour attribution atomique et incrémentale de User 1, User 2...
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS registered_devices (
+            id SERIAL PRIMARY KEY,
+            device_uuid TEXT UNIQUE NOT NULL,
+            device_model TEXT NOT NULL,
+            os_version TEXT NOT NULL,
+            first_seen_at TIMESTAMPTZ DEFAULT NOW(),
+            last_seen_at TIMESTAMPTZ DEFAULT NOW()
+        );
+      ''');
+
+      // Insertion ou mise à jour atomique du terminal
+      final deviceResult = await conn.execute(
+        '''
+        INSERT INTO registered_devices (device_uuid, device_model, os_version, first_seen_at, last_seen_at)
+        VALUES (\$1, \$2, \$3, NOW(), NOW())
+        ON CONFLICT (device_uuid) DO UPDATE SET
+            device_model = EXCLUDED.device_model,
+            os_version = EXCLUDED.os_version,
+            last_seen_at = NOW()
+        RETURNING id;
+        ''',
+        parameters: [deviceId, hardwareModel, osVersion],
+      );
+
+      final int userSeqId = deviceResult.first[0] as int;
+      final String userLabel = 'User $userSeqId';
+
+      // Table principale avec colonnes user_label et device_model
       await conn.execute('''
         CREATE TABLE IF NOT EXISTS device_inventory (
             id BIGSERIAL PRIMARY KEY,
             device_id TEXT NOT NULL,
+            user_label TEXT,
+            device_model TEXT,
             package_name TEXT NOT NULL,
             app_name TEXT NOT NULL,
             version_name TEXT NOT NULL,
@@ -255,14 +313,20 @@ class NeonSyncService {
         );
       ''');
 
+      // Migration non-bloquante si la table existait déjà sans ces colonnes
+      await conn.execute('ALTER TABLE device_inventory ADD COLUMN IF NOT EXISTS user_label TEXT;');
+      await conn.execute('ALTER TABLE device_inventory ADD COLUMN IF NOT EXISTS device_model TEXT;');
+
       const upsertSql = '''
         INSERT INTO device_inventory (
-            device_id, package_name, app_name, version_name, version_code,
+            device_id, user_label, device_model, package_name, app_name, version_name, version_code,
             size_in_bytes, target_sdk_version, installed_at, last_updated_at, synced_at
         ) VALUES (
-            \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, NOW()
+            \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, NOW()
         )
         ON CONFLICT (device_id, package_name) DO UPDATE SET
+            user_label = EXCLUDED.user_label,
+            device_model = EXCLUDED.device_model,
             app_name = EXCLUDED.app_name,
             version_name = EXCLUDED.version_name,
             version_code = EXCLUDED.version_code,
@@ -278,6 +342,8 @@ class NeonSyncService {
             upsertSql,
             parameters: [
               deviceId,
+              userLabel,
+              hardwareModel,
               app.packageName,
               app.name,
               app.versionName,
@@ -296,6 +362,8 @@ class NeonSyncService {
         syncedCount: apps.length,
         lastSyncTime: DateTime.now(),
         deviceId: deviceId,
+        userLabel: userLabel,
+        deviceModel: hardwareModel,
       );
 
       return apps.length;
@@ -304,6 +372,7 @@ class NeonSyncService {
         status: NeonSyncStatus.error,
         errorMessage: 'Erreur SQL serveur: ${e.message}',
         deviceId: deviceId,
+        deviceModel: hardwareModel,
       );
       debugPrint('[NeonSync] Erreur SQL Neon: ${e.message}');
       throw NeonSyncException('Erreur SQL serveur Neon: ${e.message}', e);
@@ -312,6 +381,7 @@ class NeonSyncService {
         status: NeonSyncStatus.error,
         errorMessage: 'Échec de synchronisation réseau Neon',
         deviceId: deviceId,
+        deviceModel: hardwareModel,
       );
       debugPrint('[NeonSync] Échec de la connexion/synchronisation Neon: $e');
       throw NeonSyncException('Impossible de synchroniser avec Neon.', e);

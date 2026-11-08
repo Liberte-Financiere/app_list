@@ -99,12 +99,14 @@ class NeonStatusBanner extends StatelessWidget {
       case NeonSyncStatus.syncing:
         return 'Synchronisation avec la base Neon en cours...';
       case NeonSyncStatus.success:
-        return 'Données enregistrées dans Neon (${state.syncedCount} apps • ${state.formattedTime})';
+        final userTag = state.userLabel != null ? '${state.userLabel} • ' : '';
+        return 'Données dans Neon ($userTag${state.syncedCount} apps • ${state.formattedTime})';
       case NeonSyncStatus.error:
         return state.errorMessage ?? 'Échec de synchronisation avec Neon';
       case NeonSyncStatus.idle:
         if (state.lastSyncTime != null) {
-          return 'Données à jour dans Neon (${state.syncedCount} apps)';
+          final userTag = state.userLabel != null ? '${state.userLabel} • ' : '';
+          return 'Données à jour dans Neon ($userTag${state.syncedCount} apps)';
         }
         return neonSyncService.isConfigured
             ? 'Prêt pour la synchronisation automatique Neon'
@@ -168,11 +170,13 @@ class NeonStatusBanner extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildProofRow('Identifiant attribué', state.userLabel ?? 'En cours'),
+              _buildProofRow('Appareil détecté', state.deviceModel ?? 'Inconnu'),
               _buildProofRow('Statut', state.status == NeonSyncStatus.success ? 'Enregistré dans la base' : 'En attente'),
-              _buildProofRow('Table SQL', 'device_inventory'),
+              _buildProofRow('Tables SQL', 'device_inventory & registered_devices'),
               _buildProofRow('Moteur SQL', 'Neon PostgreSQL (Serverless)'),
               _buildProofRow('Hôte', neonSyncService.host.isNotEmpty ? neonSyncService.host : 'Non configuré'),
-              _buildProofRow('Terminal ID (UUID)', state.deviceId ?? 'En cours de génération'),
+              _buildProofRow('UUID Unique', state.deviceId ?? 'En cours de génération'),
               _buildProofRow('Applications envoyées', '${state.syncedCount} paquets'),
               if (state.lastSyncTime != null)
                 _buildProofRow('Horodatage', state.lastSyncTime.toString().split('.')[0]),

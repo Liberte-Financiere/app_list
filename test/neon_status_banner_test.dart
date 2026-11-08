@@ -26,6 +26,8 @@ void main() {
       syncedCount: 15,
       lastSyncTime: DateTime(2026, 11, 8, 14, 30, 0),
       deviceId: 'test-device-uuid-1234',
+      userLabel: 'User 1',
+      deviceModel: 'Samsung Galaxy S23',
     );
 
     await tester.pumpWidget(
@@ -36,7 +38,8 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Données enregistrées dans Neon'), findsOneWidget);
+    expect(find.textContaining('Données dans Neon'), findsOneWidget);
+    expect(find.textContaining('User 1'), findsOneWidget);
     expect(find.textContaining('15 apps'), findsOneWidget);
 
     // Clic sur la bannière pour ouvrir la preuve d'envoi
@@ -44,7 +47,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Preuve d\'envoi Backend'), findsOneWidget);
-    expect(find.text('device_inventory'), findsOneWidget);
+    expect(find.text('User 1'), findsOneWidget);
+    expect(find.text('Samsung Galaxy S23'), findsOneWidget);
     expect(find.text('test-device-uuid-1234'), findsOneWidget);
   });
 }

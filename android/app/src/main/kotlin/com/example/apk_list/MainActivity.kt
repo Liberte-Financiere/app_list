@@ -28,6 +28,17 @@ class MainActivity : FlutterActivity() {
                     val packageNames = call.argument<List<String>>("packages")
                     extractAppsDetails(packageNames, result)
                 }
+                "getDeviceInfo" -> {
+                    val info = HashMap<String, String>()
+                    val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+                    val model = Build.MODEL
+                    val release = Build.VERSION.RELEASE
+                    info["manufacturer"] = manufacturer
+                    info["model"] = model
+                    info["fullName"] = if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+                    info["osVersion"] = "Android $release"
+                    result.success(info)
+                }
                 else -> result.notImplemented()
             }
         }
