@@ -6,6 +6,7 @@ import '../services/apk_service.dart';
 import '../services/neon_sync_service.dart';
 import 'widgets/app_list_item.dart';
 import 'widgets/consent_view.dart';
+import 'widgets/neon_status_banner.dart';
 import 'widgets/search_filter_bar.dart';
 import 'widgets/status_view.dart';
 
@@ -189,6 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Column(
       children: [
+        NeonStatusBanner(neonSyncService: widget.neonSyncService),
         SearchFilterBar(
           searchQuery: _searchQuery,
           onSearchChanged: (val) => setState(() => _searchQuery = val),

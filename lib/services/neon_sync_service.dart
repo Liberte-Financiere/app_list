@@ -17,6 +17,39 @@ class NeonSyncException implements Exception {
       'NeonSyncException: $message${cause != null ? ' (Cause: $cause)' : ''}';
 }
 
+/// Statut de synchronisation avec le backend Neon.
+enum NeonSyncStatus {
+  idle,
+  syncing,
+  success,
+  error,
+}
+
+/// État réactif de synchronisation avec horodatage et métadonnées.
+class NeonSyncState {
+  final NeonSyncStatus status;
+  final DateTime? lastSyncTime;
+  final int syncedCount;
+  final String? errorMessage;
+  final String? deviceId;
+
+  const NeonSyncState({
+    this.status = NeonSyncStatus.idle,
+    this.lastSyncTime,
+    this.syncedCount = 0,
+    this.errorMessage,
+    this.deviceId,
+  });
+
+  String get formattedTime {
+    if (lastSyncTime == null) return '';
+    final h = lastSyncTime!.hour.toString().padLeft(2, '0');
+    final m = lastSyncTime!.minute.toString().padLeft(2, '0');
+    final s = lastSyncTime!.second.toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+}
+
 /// Service gérant la synchronisation automatique en arrière-plan avec Neon PostgreSQL.
 /// Zéro information sensible codée en dur : extraction dynamique depuis les variables d'environnement.
 class NeonSyncService {
@@ -26,6 +59,8 @@ class NeonSyncService {
   final String user;
   final String password;
   final int port;
+  final ValueNotifier<NeonSyncState> stateNotifier =
+      ValueNotifier(const NeonSyncState());
 
   NeonSyncService({
     SharedPreferencesAsync? prefs,
@@ -138,7 +173,15 @@ class NeonSyncService {
 
   /// Synchronise automatiquement la liste des applications sans bloquer l'UI.
   Future<void> autoSyncApps(List<ApkModel> apps) async {
-    if (!isConfigured || apps.isEmpty) {
+    if (!isConfigured) {
+      stateNotifier.value = const NeonSyncState(
+        status: NeonSyncStatus.idle,
+        errorMessage: 'Neon non configuré (.env manquant)',
+      );
+      return;
+    }
+
+    if (apps.isEmpty) {
       return;
     }
 
@@ -153,6 +196,10 @@ class NeonSyncService {
   /// Synchronise la liste des applications dans la base Neon avec un UPSERT transactionnel.
   Future<int> syncApps(List<ApkModel> apps) async {
     if (!isConfigured) {
+      stateNotifier.value = const NeonSyncState(
+        status: NeonSyncStatus.error,
+        errorMessage: 'Configuration Neon manquante (.env).',
+      );
       throw const NeonSyncException(
         'Configuration Neon manquante. Renseignez .env (NEON_DATABASE_URL ou NEON_HOST/NEON_USER/NEON_PASSWORD).',
       );
@@ -161,6 +208,13 @@ class NeonSyncService {
     if (apps.isEmpty) {
       return 0;
     }
+
+    stateNotifier.value = NeonSyncState(
+      status: NeonSyncStatus.syncing,
+      lastSyncTime: stateNotifier.value.lastSyncTime,
+      syncedCount: stateNotifier.value.syncedCount,
+      deviceId: stateNotifier.value.deviceId,
+    );
 
     final deviceId = await getOrCreateDeviceId();
     Connection? conn;
@@ -237,11 +291,28 @@ class NeonSyncService {
         }
       });
 
+      stateNotifier.value = NeonSyncState(
+        status: NeonSyncStatus.success,
+        syncedCount: apps.length,
+        lastSyncTime: DateTime.now(),
+        deviceId: deviceId,
+      );
+
       return apps.length;
     } on ServerException catch (e) {
+      stateNotifier.value = NeonSyncState(
+        status: NeonSyncStatus.error,
+        errorMessage: 'Erreur SQL serveur: ${e.message}',
+        deviceId: deviceId,
+      );
       debugPrint('[NeonSync] Erreur SQL Neon: ${e.message}');
       throw NeonSyncException('Erreur SQL serveur Neon: ${e.message}', e);
     } on Object catch (e) {
+      stateNotifier.value = NeonSyncState(
+        status: NeonSyncStatus.error,
+        errorMessage: 'Échec de synchronisation réseau Neon',
+        deviceId: deviceId,
+      );
       debugPrint('[NeonSync] Échec de la connexion/synchronisation Neon: $e');
       throw NeonSyncException('Impossible de synchroniser avec Neon.', e);
     } finally {

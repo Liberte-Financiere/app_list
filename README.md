@@ -57,6 +57,7 @@ lib/
 │   ├── widgets/
 │   │   ├── app_list_item.dart   # Carte d'application moderne avec badges et actions
 │   │   ├── consent_view.dart    # Vue de consentement utilisateur structurée
+│   │   ├── neon_status_banner.dart # Bannière réactive de confirmation backend (preuve d'envoi)
 │   │   ├── search_filter_bar.dart # Barre de recherche et filtres de paquets
 │   │   └── status_view.dart     # Gestion unifiée des états (chargement, erreur, vide)
 │   └── dashboard_screen.dart    # Orchestrateur du tableau de bord
