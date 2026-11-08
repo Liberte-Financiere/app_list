@@ -28,6 +28,12 @@ abstract class ApkService {
   /// Ouvre la page des paramètres système de l'application ciblée.
   Future<void> openAppSettings(String packageName);
 
+  /// Récupère le nom d'utilisateur sauvegardé localement.
+  Future<String?> getUserName();
+
+  /// Enregistre le nom d'utilisateur dans le stockage persistant.
+  Future<void> setUserName(String name);
+
   /// Flux notifiant les ajouts, suppressions ou mises à jour de paquets sur l'appareil.
   Stream<String> get onPackageChanged;
 }

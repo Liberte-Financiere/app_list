@@ -6,8 +6,9 @@ abstract final class AppStrings {
 
   // Préférences & Clés de stockage
   static const String prefConsentKey = 'has_accepted_app_scan_consent';
+  static const String prefUserNameKey = 'user_profile_name';
 
-  // Écran de consentement
+  // Écran de consentement & Profil
   static const String consentTitle = 'Autorisation d\'accès aux applications';
   static const String consentSubtitle =
       'Pour afficher la liste complète de vos applications, une autorisation locale est requise.';
@@ -15,8 +16,19 @@ abstract final class AppStrings {
       'Conformément aux directives de sécurité Android et à la protection des données, '
       'cette application analyse uniquement les métadonnées locales (nom, version, icône). '
       'Aucune donnée personnelle n\'est collectée ni envoyée vers des serveurs distants.';
-  static const String consentButtonAccept = 'Autoriser et scanner l\'appareil';
+  static const String consentButtonAccept = 'Continuer vers mon profil';
   static const String consentButtonRefuse = 'Plus tard';
+
+  // Étape Profil utilisateur
+  static const String profileTitle = 'Création de votre profil';
+  static const String profileSubtitle =
+      'Choisissez un nom ou pseudonyme pour identifier ce terminal dans votre inventaire.';
+  static const String profileInputLabel = 'Nom ou pseudonyme';
+  static const String profileInputHint = 'Ex: Adama, Pixel Pro, Tablette';
+  static const String profileInputHelper =
+      'Ce nom sera associé aux applications de cet appareil dans vos rapports.';
+  static const String profileInputError = 'Veuillez renseigner au moins 2 caractères.';
+  static const String profileButtonSubmit = 'Finaliser & Ouvrir le tableau de bord';
 
   // Tableau de bord & Recherche
   static const String searchPlaceholder = 'Rechercher par nom ou package...';

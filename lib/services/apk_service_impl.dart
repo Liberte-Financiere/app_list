@@ -60,6 +60,36 @@ class ApkServiceImpl implements ApkService {
   }
 
   @override
+  Future<String?> getUserName() async {
+    try {
+      final name = await _prefs.getString(AppStrings.prefUserNameKey);
+      if (name != null && name.trim().isNotEmpty) {
+        return name.trim();
+      }
+      return null;
+    } on Object catch (e) {
+      debugPrint('Erreur lors de la lecture du nom d\'utilisateur: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> setUserName(String name) async {
+    final cleanName = name.trim();
+    if (cleanName.length < 2) {
+      throw const ApkServiceException('Le nom d\'utilisateur doit comporter au moins 2 caractères.');
+    }
+    try {
+      await _prefs.setString(AppStrings.prefUserNameKey, cleanName);
+    } on Object catch (e) {
+      throw ApkServiceException(
+        'Impossible d\'enregistrer le nom d\'utilisateur.',
+        e,
+      );
+    }
+  }
+
+  @override
   Future<List<ApkModel>> fetchInstalledApps({bool includeSystemApps = false}) async {
     if (kIsWeb || !Platform.isAndroid) {
       return _getFallbackData(includeSystemApps: includeSystemApps);

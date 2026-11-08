@@ -161,7 +161,10 @@ class NeonSyncService {
         osVersion: osVersion,
       );
 
-      final userLabel = registeredDevice.userLabel;
+      final customUserName = await _deviceService.getUserName();
+      final userLabel = (customUserName != null && customUserName.isNotEmpty)
+          ? customUserName
+          : registeredDevice.userLabel;
 
       // 2. Conversion des ApkModel en InventoryItemModel pour InventoryService
       final inventoryItems = apps.map((apk) {

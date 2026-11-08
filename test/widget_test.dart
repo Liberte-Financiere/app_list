@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -9,14 +10,17 @@ import 'package:apk_list/services/apk_service.dart';
 
 class MockApkService implements ApkService {
   bool _consent;
+  String? _userName;
   final List<ApkModel> _apps;
   final StreamController<String> _packageChangeController =
       StreamController<String>.broadcast();
 
   MockApkService({
     bool initialConsent = false,
+    String? userName,
     List<ApkModel>? apps,
   })  : _consent = initialConsent,
+        _userName = userName,
         _apps = apps ?? [];
 
   @override
@@ -25,6 +29,14 @@ class MockApkService implements ApkService {
   @override
   Future<void> setUserConsent(bool granted) async {
     _consent = granted;
+  }
+
+  @override
+  Future<String?> getUserName() async => _userName;
+
+  @override
+  Future<void> setUserName(String name) async {
+    _userName = name.trim();
   }
 
   @override
@@ -80,6 +92,7 @@ void main() {
 
     final mockService = MockApkService(
       initialConsent: true,
+      userName: 'Test User',
       apps: [testApp],
     );
 
@@ -89,6 +102,47 @@ void main() {
     expect(find.text('Application Test'), findsOneWidget);
     expect(find.text('com.example.app'), findsOneWidget);
     expect(find.text('v1.2.3'), findsOneWidget);
+    expect(find.text('Test User'), findsOneWidget);
+  });
+
+  testWidgets('Parcours complet onboarding: acceptation consentement puis saisie du profil', (
+    WidgetTester tester,
+  ) async {
+    final app = ApkModel(
+      id: 'com.sample.app',
+      name: 'Sample App',
+      packageName: 'com.sample.app',
+      versionName: '1.0.0',
+      versionCode: 1,
+      sizeInBytes: 2048,
+      filePath: '',
+      installDate: DateTime(2026, 1, 1),
+    );
+
+    final mockService = MockApkService(
+      initialConsent: false,
+      apps: [app],
+    );
+
+    await tester.pumpWidget(ApkApp(apkService: mockService));
+    await tester.pumpAndSettle();
+
+    // 1. Étape consentement
+    expect(find.text(AppStrings.consentTitle), findsOneWidget);
+    await tester.tap(find.text(AppStrings.consentButtonAccept));
+    await tester.pumpAndSettle();
+
+    // 2. Étape profil utilisateur
+    expect(find.text(AppStrings.profileTitle), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField), 'Adama');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(AppStrings.profileButtonSubmit));
+    await tester.pumpAndSettle();
+
+    // 3. Arrivée directe sur le tableau de bord avec le pseudo et l'app
+    expect(find.text('Adama'), findsOneWidget);
+    expect(find.text('Sample App'), findsOneWidget);
   });
 
   testWidgets('Actualise la liste automatiquement lors de la réception d\'un événement de paquet', (
@@ -107,6 +161,7 @@ void main() {
 
     final mockService = MockApkService(
       initialConsent: true,
+      userName: 'Adama',
       apps: [app1],
     );
 

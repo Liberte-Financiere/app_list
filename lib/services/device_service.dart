@@ -31,6 +31,16 @@ class DeviceService {
     return newId;
   }
 
+  /// Récupère le nom d'utilisateur configuré localement.
+  Future<String?> getUserName() async {
+    const userNameKey = 'user_profile_name';
+    final name = await _effectivePrefs.getString(userNameKey);
+    if (name != null && name.trim().isNotEmpty) {
+      return name.trim();
+    }
+    return null;
+  }
+
   /// Récupère les métadonnées matérielles de l'appareil (Marque/Modèle et version OS).
   Future<(String deviceModel, String osVersion)> getDeviceHardwareInfo() async {
     if (kIsWeb || !Platform.isAndroid) {

@@ -17,7 +17,10 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
 - **Attribution atomique des utilisateurs & Modèles d'appareils** :
   - Identification automatique de chaque terminal connecté (`User 1`, `User 2`, etc.) via séquence PostgreSQL `SERIAL` dans `registered_devices`.
   - Détection native du fabricant et modèle (`Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`).
-- **Consentement utilisateur (Prominent Disclosure)** : Gestion conforme aux règles Google Play et RGPD pour `QUERY_ALL_PACKAGES`.
+- **Consentement utilisateur & Personnalisation du profil** :
+  - Parcours d'onboarding immersif en 2 étapes : consentement RGPD / Google Play puis saisie d'un pseudonyme / nom d'utilisateur personnalisé.
+  - Persistance locale dans `SharedPreferences` : dès la validation initiale, les lancements ultérieurs ouvrent directement le tableau de bord sans ré-afficher l'onboarding.
+  - Attribution personnalisée sur la base Neon (`user_label`) et affichage du badge profil dans l'en-tête de l'application.
 
 ## Prérequis
 
@@ -67,7 +70,7 @@ lib/
 ├── dashboard/
 │   ├── widgets/
 │   │   ├── app_list_item.dart   # Carte d'application moderne avec badges et actions
-│   │   ├── consent_view.dart    # Vue de consentement utilisateur structurée
+│   │   ├── onboarding_view.dart # Parcours d'accueil animé (Consentement & Profil utilisateur)
 │   │   ├── neon_status_banner.dart # Bannière réactive de confirmation backend (preuve d'envoi)
 │   │   ├── search_filter_bar.dart # Barre de recherche et filtres de paquets
 │   │   └── status_view.dart     # Gestion unifiée des états (chargement, erreur, vide)
