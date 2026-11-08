@@ -39,6 +39,20 @@ void main() {
       expect(service3.isConfigured, isTrue);
     });
 
+    test('Résolution et parsing de NEON_DATABASE_URL', () {
+      final service = NeonSyncService(
+        connectionUrl:
+            'postgresql://testuser:testpass@ep-test-subdomain.us-east-2.aws.neon.tech/testdb?sslmode=require',
+      );
+
+      expect(service.isConfigured, isTrue);
+      expect(service.host, 'ep-test-subdomain.us-east-2.aws.neon.tech');
+      expect(service.database, 'testdb');
+      expect(service.user, 'testuser');
+      expect(service.password, 'testpass');
+      expect(service.port, 5432);
+    });
+
     test('getOrCreateDeviceId génère un UUID valide et le persiste', () async {
       final service = NeonSyncService();
 

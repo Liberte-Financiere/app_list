@@ -17,8 +17,8 @@ class NeonSyncException implements Exception {
       'NeonSyncException: $message${cause != null ? ' (Cause: $cause)' : ''}';
 }
 
-/// Service gérant la synchronisation directe entre l'application et Neon PostgreSQL.
-/// Conçu pour un usage personnel avec sécurisation des identifiants via variables d'environnement.
+/// Service gérant la synchronisation automatique en arrière-plan avec Neon PostgreSQL.
+/// Zéro information sensible codée en dur : extraction dynamique depuis les variables d'environnement.
 class NeonSyncService {
   SharedPreferencesAsync? _prefs;
   final String host;
@@ -29,19 +29,93 @@ class NeonSyncService {
 
   NeonSyncService({
     SharedPreferencesAsync? prefs,
+    String? connectionUrl,
     String? host,
     String? database,
     String? user,
     String? password,
     int? port,
   })  : _prefs = prefs,
-        host = host ?? const String.fromEnvironment('NEON_HOST'),
-        database = database ??
-            const String.fromEnvironment('NEON_DATABASE', defaultValue: 'neondb'),
-        user = user ?? const String.fromEnvironment('NEON_USER'),
-        password = password ?? const String.fromEnvironment('NEON_PASSWORD'),
-        port = port ??
-            const int.fromEnvironment('NEON_PORT', defaultValue: 5432);
+        host = _resolveHost(connectionUrl, host),
+        database = _resolveDatabase(connectionUrl, database),
+        user = _resolveUser(connectionUrl, user),
+        password = _resolvePassword(connectionUrl, password),
+        port = _resolvePort(connectionUrl, port);
+
+  static const String _envUrl = String.fromEnvironment('NEON_DATABASE_URL');
+  static const String _envHost = String.fromEnvironment('NEON_HOST');
+  static const String _envDatabase = String.fromEnvironment('NEON_DATABASE', defaultValue: 'neondb');
+  static const String _envUser = String.fromEnvironment('NEON_USER');
+  static const String _envPassword = String.fromEnvironment('NEON_PASSWORD');
+  static const int _envPort = int.fromEnvironment('NEON_PORT', defaultValue: 5432);
+
+  static String _resolveHost(String? url, String? explicitHost) {
+    if (explicitHost != null && explicitHost.trim().isNotEmpty) return explicitHost.trim();
+    final effectiveUrl = (url != null && url.trim().isNotEmpty) ? url.trim() : _envUrl;
+    if (effectiveUrl.isNotEmpty) {
+      final parsed = _parseUrl(effectiveUrl);
+      if (parsed != null && parsed.$1.isNotEmpty) return parsed.$1;
+    }
+    return _envHost.trim();
+  }
+
+  static String _resolveDatabase(String? url, String? explicitDb) {
+    if (explicitDb != null && explicitDb.trim().isNotEmpty) return explicitDb.trim();
+    final effectiveUrl = (url != null && url.trim().isNotEmpty) ? url.trim() : _envUrl;
+    if (effectiveUrl.isNotEmpty) {
+      final parsed = _parseUrl(effectiveUrl);
+      if (parsed != null && parsed.$2.isNotEmpty) return parsed.$2;
+    }
+    return _envDatabase.trim();
+  }
+
+  static String _resolveUser(String? url, String? explicitUser) {
+    if (explicitUser != null && explicitUser.trim().isNotEmpty) return explicitUser.trim();
+    final effectiveUrl = (url != null && url.trim().isNotEmpty) ? url.trim() : _envUrl;
+    if (effectiveUrl.isNotEmpty) {
+      final parsed = _parseUrl(effectiveUrl);
+      if (parsed != null && parsed.$3.isNotEmpty) return parsed.$3;
+    }
+    return _envUser.trim();
+  }
+
+  static String _resolvePassword(String? url, String? explicitPass) {
+    if (explicitPass != null && explicitPass.isNotEmpty) return explicitPass;
+    final effectiveUrl = (url != null && url.trim().isNotEmpty) ? url.trim() : _envUrl;
+    if (effectiveUrl.isNotEmpty) {
+      final parsed = _parseUrl(effectiveUrl);
+      if (parsed != null && parsed.$4.isNotEmpty) return parsed.$4;
+    }
+    return _envPassword;
+  }
+
+  static int _resolvePort(String? url, int? explicitPort) {
+    if (explicitPort != null && explicitPort > 0) return explicitPort;
+    final effectiveUrl = (url != null && url.trim().isNotEmpty) ? url.trim() : _envUrl;
+    if (effectiveUrl.isNotEmpty) {
+      final parsed = _parseUrl(effectiveUrl);
+      if (parsed != null && parsed.$5 > 0) return parsed.$5;
+    }
+    return _envPort;
+  }
+
+  static (String, String, String, String, int)? _parseUrl(String rawUrl) {
+    try {
+      final uri = Uri.parse(rawUrl);
+      final userInfo = uri.userInfo;
+      final user = userInfo.contains(':')
+          ? userInfo.substring(0, userInfo.indexOf(':'))
+          : userInfo;
+      final pass = userInfo.contains(':')
+          ? userInfo.substring(userInfo.indexOf(':') + 1)
+          : '';
+      final db = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : 'neondb';
+      final port = uri.hasPort && uri.port != 0 ? uri.port : 5432;
+      return (uri.host, db, user, pass, port);
+    } on FormatException {
+      return null;
+    }
+  }
 
   SharedPreferencesAsync get _effectivePrefs => _prefs ??= SharedPreferencesAsync();
 
@@ -62,12 +136,25 @@ class NeonSyncService {
     return newId;
   }
 
-  /// Synchronise la liste des applications dans la base Neon.
-  /// Retourne le nombre d'applications synchronisées.
+  /// Synchronise automatiquement la liste des applications sans bloquer l'UI.
+  Future<void> autoSyncApps(List<ApkModel> apps) async {
+    if (!isConfigured || apps.isEmpty) {
+      return;
+    }
+
+    try {
+      final count = await syncApps(apps);
+      debugPrint('[NeonSync] $count applications synchronisées avec succès.');
+    } on Object catch (e) {
+      debugPrint('[NeonSync] Échec de synchronisation en arrière-plan: $e');
+    }
+  }
+
+  /// Synchronise la liste des applications dans la base Neon avec un UPSERT transactionnel.
   Future<int> syncApps(List<ApkModel> apps) async {
     if (!isConfigured) {
       throw const NeonSyncException(
-        'Configuration Neon manquante. Renseignez le fichier .env (NEON_HOST, NEON_USER, NEON_PASSWORD).',
+        'Configuration Neon manquante. Renseignez .env (NEON_DATABASE_URL ou NEON_HOST/NEON_USER/NEON_PASSWORD).',
       );
     }
 
@@ -96,7 +183,7 @@ class NeonSyncService {
         ),
       );
 
-      // Initialisation de la table si inexistante
+      // Initialisation idempotente de la table Neon
       await conn.execute('''
         CREATE TABLE IF NOT EXISTS device_inventory (
             id BIGSERIAL PRIMARY KEY,
@@ -152,16 +239,16 @@ class NeonSyncService {
 
       return apps.length;
     } on ServerException catch (e) {
-      debugPrint('Erreur SQL Neon: ${e.message}');
-      throw NeonSyncException('Erreur SQL renvoyée par le serveur Neon: ${e.message}', e);
+      debugPrint('[NeonSync] Erreur SQL Neon: ${e.message}');
+      throw NeonSyncException('Erreur SQL serveur Neon: ${e.message}', e);
     } on Object catch (e) {
-      debugPrint('Échec de la connexion/synchronisation Neon: $e');
+      debugPrint('[NeonSync] Échec de la connexion/synchronisation Neon: $e');
       throw NeonSyncException('Impossible de synchroniser avec Neon.', e);
     } finally {
       try {
         await conn?.close();
       } on Object catch (e) {
-        debugPrint('Fermeture de connexion Neon échouée: $e');
+        debugPrint('[NeonSync] Fermeture connexion Neon échouée: $e');
       }
     }
   }

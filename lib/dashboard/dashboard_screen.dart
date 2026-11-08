@@ -28,7 +28,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoadingConsent = true;
   bool _hasConsent = false;
   bool _isLoadingApps = false;
-  bool _isSyncingNeon = false;
   bool _includeSystemApps = false;
   String _searchQuery = '';
   String? _errorMessage;
@@ -100,6 +99,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _allApps = apps;
         _isLoadingApps = false;
       });
+
+      // Synchronisation transparente en arrière-plan sans bloquer l'UI
+      widget.neonSyncService.autoSyncApps(apps);
     } on ApkServiceException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -124,32 +126,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _syncWithNeon() async {
-    if (!widget.neonSyncService.isConfigured) {
-      _showSnackBar(
-        'Configuration Neon non détectée. Renseignez .env ou utilisez --dart-define-from-file=.env',
-      );
-      return;
-    }
-
-    setState(() => _isSyncingNeon = true);
-    try {
-      final count = await widget.neonSyncService.syncApps(_allApps);
-      if (!mounted) return;
-      _showSnackBar('$count applications synchronisées avec Neon !');
-    } on NeonSyncException catch (e) {
-      if (!mounted) return;
-      _showSnackBar(e.message);
-    } on Object catch (e) {
-      if (!mounted) return;
-      _showSnackBar('Erreur imprévue de synchronisation: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isSyncingNeon = false);
-      }
-    }
-  }
-
   List<ApkModel> get _filteredApps {
     if (_searchQuery.trim().isEmpty) return _allApps;
     final query = _searchQuery.toLowerCase().trim();
@@ -166,19 +142,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text(AppStrings.appName),
         actions: [
           if (_hasConsent) ...[
-            IconButton(
-              icon: _isSyncingNeon
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_upload_rounded),
-              tooltip: 'Synchroniser vers Neon',
-              onPressed: (_isSyncingNeon || _isLoadingApps || _allApps.isEmpty)
-                  ? null
-                  : _syncWithNeon,
-            ),
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
               tooltip: AppStrings.actionRefresh,

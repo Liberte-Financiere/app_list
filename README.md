@@ -97,4 +97,4 @@ flutter run
    ```bash
    flutter run --dart-define-from-file=.env
    ```
-4. Cliquez sur l'icône de synchronisation nuage dans la barre supérieure de l'application pour synchroniser la liste d'applications vers la table `device_inventory` de Neon.
+4. La synchronisation vers la table `device_inventory` de Neon s'effectue automatiquement en arrière-plan à chaque ouverture ou actualisation de l'inventaire, sans aucun bouton manuel ni blocage de l'interface.
