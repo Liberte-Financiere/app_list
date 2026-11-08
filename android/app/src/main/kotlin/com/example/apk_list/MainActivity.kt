@@ -50,15 +50,19 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         activeInstance = this
 
+        // Canal de communication bidirectionnel entre Flutter (Dart) et Android (Kotlin)
         val methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
         channel = methodChannel
 
+        // Réception et traitement des commandes envoyées par Flutter
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
+                // Flutter demande les métadonnées approfondies de la liste des applications
                 "getAppsDetails" -> {
                     val packageNames = call.argument<List<String>>("packages")
                     extractAppsDetails(packageNames, result)
                 }
+                // Flutter demande les caractéristiques matérielles du téléphone (fabricant, modèle, version OS)
                 "getDeviceInfo" -> {
                     val info = HashMap<String, String>()
                     val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
@@ -108,6 +112,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun extractAppsDetails(packageNames: List<String>?, result: MethodChannel.Result) {
+        // Exécution sur un thread d'arrière-plan pour ne jamais geler l'affichage Flutter
         backgroundExecutor.execute {
             try {
                 val pm = context.packageManager
@@ -134,6 +139,7 @@ class MainActivity : FlutterActivity() {
                             pm.getApplicationInfo(pkgName, 0)
                         }
 
+                        // Demande à Android de lire les permissions déclarées dans le Manifest de cette app
                         val pkgInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()))
                         } else {
@@ -141,6 +147,7 @@ class MainActivity : FlutterActivity() {
                             pm.getPackageInfo(pkgName, PackageManager.GET_PERMISSIONS)
                         }
 
+                        // Mesure de la taille réelle du fichier APK stocké sur le disque
                         val sourceDir = appInfo.sourceDir
                         val sizeInBytes = if (!sourceDir.isNullOrEmpty()) {
                             val apkFile = File(sourceDir)
@@ -153,7 +160,7 @@ class MainActivity : FlutterActivity() {
                             0L
                         }
 
-                        // Extraction de la source d'installation (Play Store, Phoenix, etc.)
+                        // Détection du magasin d'installation d'origine (Google Play, Phoenix, etc.)
                         val installerPackageName: String? = try {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 val installSource = pm.getInstallSourceInfo(pkgName)
@@ -166,7 +173,7 @@ class MainActivity : FlutterActivity() {
                             null
                         }
 
-                        // Extraction et classification des permissions déclarées et accordées
+                        // Comparaison de l'état système : l'autorisation est-elle accordée (1) ou refusée (0) ?
                         val requestedPermissions = pkgInfo.requestedPermissions ?: emptyArray()
                         val requestedFlags = pkgInfo.requestedPermissionsFlags ?: IntArray(0)
                         val grantedPermissions = ArrayList<String>()
@@ -195,6 +202,7 @@ class MainActivity : FlutterActivity() {
                     }
                 }
 
+                // Renvoi des résultats complets à Flutter sur le thread principal UI
                 mainHandler.post {
                     result.success(detailsMap)
                 }
