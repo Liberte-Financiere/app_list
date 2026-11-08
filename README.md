@@ -13,7 +13,7 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
   - Audit des permissions du manifest : distinction précise entre permissions déclarées et permissions effectivement accordées (`grantedPermissions`).
 - **Canal natif Android optimisé** : Extraction multithreadée via `MethodChannel` (`Executors.newFixedThreadPool`) pour éviter tout blocage du thread principal UI.
 - **Récepteur d'événements système (`BroadcastReceiver`)** : Écoute passive et silencieuse de `PACKAGE_ADDED`, `PACKAGE_REMOVED` et `PACKAGE_REPLACED` avec rafraîchissement automatique en temps réel de l'inventaire sans surconsommation de batterie.
-- **Fiche modale d'inspection** : Affichage détaillé par application avec liste interactive des permissions (statut accordé/refusé), bouton direct vers les paramètres système de gestion des permissions, source d'installation et actions rapides.
+- **Page dédiée d'inspection détaillée (`AppDetailsScreen`)** : Vue plein écran ergonomique remplaçant les pop-ups/modales pour une lisibilité maximale de toutes les informations techniques (package avec copie en 1 clic, version, build, SDK Android cible, source du magasin, chemin binaire APK copiable, dates d'installation et de mise à jour, taille exacte en octets) ainsi qu'un audit interactif des permissions système avec filtrage réactif (Toutes / Accordées / Refusées), recherche textuelle et accès direct aux paramètres Android.
 - **Attribution atomique des utilisateurs & Modèles d'appareils** :
   - Identification automatique de chaque terminal connecté (`User 1`, `User 2`, etc.) via séquence PostgreSQL `SERIAL` dans `registered_devices`.
   - Détection native du fabricant et modèle (`Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`).
@@ -78,6 +78,7 @@ lib/
 │   │   ├── neon_status_banner.dart # Bannière réactive de confirmation backend (preuve d'envoi)
 │   │   ├── search_filter_bar.dart # Barre de recherche et filtres de paquets
 │   │   └── status_view.dart     # Gestion unifiée des états (chargement, erreur, vide)
+│   ├── app_details_screen.dart  # Écran dédié pleine page des détails et permissions de l'application
 │   └── dashboard_screen.dart    # Orchestrateur du tableau de bord épuré
 ├── profile/
 │   └── profile_screen.dart      # Écran dédié au profil, informations terminal et confidentialité

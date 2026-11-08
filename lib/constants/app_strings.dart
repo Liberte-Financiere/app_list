@@ -39,8 +39,17 @@ abstract final class AppStrings {
   // Actions sur les cartes
   static const String actionLaunch = 'Lancer';
   static const String actionDetails = 'Paramètres';
+  static const String actionViewDetails = 'Voir les détails';
   static const String actionRefresh = 'Actualiser';
   static const String actionRevokeConsent = 'Révoquer l\'autorisation';
+
+  // Écran Détails complets
+  static const String detailsScreenTitle = 'Détails de l\'application';
+  static const String technicalInfoTitle = 'Informations techniques';
+  static const String permissionsTitle = 'Permissions de l\'application';
+  static const String packageCopied = 'Nom du package copié dans le presse-papiers.';
+  static const String pathCopied = 'Chemin binaire APK copié dans le presse-papiers.';
+  static const String managePermissionsInSettings = 'Gérer dans les paramètres système';
 
   // Badges & Types
   static const String badgeSystem = 'SYSTÈME';

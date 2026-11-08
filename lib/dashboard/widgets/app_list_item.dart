@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
 import '../../constants/app_typography.dart';
 import '../../models/apk_model.dart';
+import '../app_details_screen.dart';
 
 /// Carte moderne présentant une application avec sa taille, version et actions.
 class AppListItem extends StatelessWidget {
@@ -17,6 +18,18 @@ class AppListItem extends StatelessWidget {
     required this.onLaunch,
     required this.onSettings,
   });
+
+  void _openDetailsScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AppDetailsScreen(
+          app: app,
+          onLaunch: onLaunch,
+          onSettings: onSettings,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +45,7 @@ class AppListItem extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _showAppDetailsSheet(context),
+        onTap: () => _openDetailsScreen(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
@@ -190,11 +203,11 @@ class AppListItem extends StatelessWidget {
       children: [
         IconButton.filledTonal(
           icon: const Icon(Icons.info_outline_rounded, size: 20),
-          tooltip: 'Détails complets',
+          tooltip: AppStrings.actionViewDetails,
           style: IconButton.styleFrom(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () => _showAppDetailsSheet(context),
+          onPressed: () => _openDetailsScreen(context),
         ),
         const SizedBox(width: 6),
         IconButton.filled(
@@ -208,279 +221,6 @@ class AppListItem extends StatelessWidget {
           onPressed: onLaunch,
         ),
       ],
-    );
-  }
-
-  void _showAppDetailsSheet(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final secondaryTextColor =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            24,
-            16,
-            24,
-            MediaQuery.of(ctx).padding.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  _buildAppIcon(),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(app.name, style: AppTypography.titleLarge),
-                        Text(app.packageName, style: AppTypography.bodySmall.copyWith(color: secondaryTextColor)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Divider(height: 1),
-              const SizedBox(height: 14),
-              _buildDetailRow('Taille du package APK', app.formattedSize, Icons.storage_rounded),
-              _buildDetailRow('Source d\'installation', app.installerDisplayName, Icons.storefront_rounded),
-              _buildDetailRow('Version installée', 'v${app.versionName} (${app.versionCode})', Icons.tag_rounded),
-              if (app.targetSdkVersion > 0)
-                _buildDetailRow('SDK Android cible', 'API ${app.targetSdkVersion}', Icons.android_rounded),
-              _buildPermissionsRow(context),
-              _buildDetailRow(
-                'Date d\'installation',
-                '${app.installDate.day.toString().padLeft(2, '0')}/${app.installDate.month.toString().padLeft(2, '0')}/${app.installDate.year}',
-                Icons.calendar_today_rounded,
-              ),
-              if (app.lastUpdateDate != null)
-                _buildDetailRow(
-                  'Dernière mise à jour',
-                  '${app.lastUpdateDate!.day.toString().padLeft(2, '0')}/${app.lastUpdateDate!.month.toString().padLeft(2, '0')}/${app.lastUpdateDate!.year}',
-                  Icons.update_rounded,
-                ),
-              if (app.filePath.isNotEmpty)
-                _buildDetailRow('Chemin binaire APK', app.filePath, Icons.folder_open_rounded),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.settings_outlined),
-                      label: const Text(AppStrings.actionDetails),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        onSettings();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      label: const Text(AppStrings.actionLaunch),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        onLaunch();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPermissionsRow(BuildContext context) {
-    final grantedCount = app.grantedPermissions.length;
-    final totalCount = app.declaredPermissions.length;
-    final text = totalCount == 0
-        ? 'Aucune permission demandée'
-        : '$grantedCount accordée(s) sur $totalCount déclarée(s)';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.security_rounded, size: 18, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Permissions système',
-                    style: AppTypography.labelSmall.copyWith(color: Colors.grey[600])),
-                const SizedBox(height: 1),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        text,
-                        style: AppTypography.bodySmall
-                            .copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    if (totalCount > 0)
-                      InkWell(
-                        onTap: () => _showPermissionsDialog(context),
-                        borderRadius: BorderRadius.circular(4),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          child: Text(
-                            'Voir le détail',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPermissionsDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text('Permissions (${app.name})', style: AppTypography.titleMedium),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: app.declaredPermissions.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (_, index) {
-                final perm = app.declaredPermissions[index];
-                final isGranted = app.grantedPermissions.contains(perm);
-                final simpleName = perm.replaceFirst('android.permission.', '');
-
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    isGranted ? Icons.check_circle_rounded : Icons.cancel_outlined,
-                    color: isGranted ? Colors.green : Colors.red[400],
-                    size: 20,
-                  ),
-                  title: Text(
-                    simpleName,
-                    style: AppTypography.bodySmall.copyWith(
-                      fontWeight: isGranted ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                  subtitle: Text(
-                    perm,
-                    style: AppTypography.labelSmall.copyWith(fontSize: 10, color: Colors.grey),
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isGranted ? Colors.green.withAlpha(25) : Colors.red.withAlpha(25),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      isGranted ? 'Accordée' : 'Refusée',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isGranted ? Colors.green[800] : Colors.red[800],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Fermer'),
-            ),
-            FilledButton.icon(
-              icon: const Icon(Icons.tune_rounded, size: 18),
-              label: const Text('Gérer dans les paramètres'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.pop(ctx);
-                onSettings();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTypography.labelSmall.copyWith(color: Colors.grey[600])),
-                const SizedBox(height: 1),
-                Text(
-                  value,
-                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
