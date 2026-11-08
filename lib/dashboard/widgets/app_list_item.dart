@@ -440,6 +440,18 @@ class AppListItem extends StatelessWidget {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Fermer'),
             ),
+            FilledButton.icon(
+              icon: const Icon(Icons.tune_rounded, size: 18),
+              label: const Text('Gérer dans les paramètres'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                onSettings();
+              },
+            ),
           ],
         );
       },

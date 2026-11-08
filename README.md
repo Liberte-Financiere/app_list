@@ -13,7 +13,7 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
   - Audit des permissions du manifest : distinction précise entre permissions déclarées et permissions effectivement accordées (`grantedPermissions`).
 - **Canal natif Android optimisé** : Extraction multithreadée via `MethodChannel` (`Executors.newFixedThreadPool`) pour éviter tout blocage du thread principal UI.
 - **Récepteur d'événements système (`BroadcastReceiver`)** : Écoute passive et silencieuse de `PACKAGE_ADDED`, `PACKAGE_REMOVED` et `PACKAGE_REPLACED` avec rafraîchissement automatique en temps réel de l'inventaire sans surconsommation de batterie.
-- **Fiche modale d'inspection** : Affichage détaillé par application avec liste interactive des permissions, source d'installation et actions rapides (lancement, accès aux paramètres système).
+- **Fiche modale d'inspection** : Affichage détaillé par application avec liste interactive des permissions (statut accordé/refusé), bouton direct vers les paramètres système de gestion des permissions, source d'installation et actions rapides.
 - **Attribution atomique des utilisateurs & Modèles d'appareils** :
   - Identification automatique de chaque terminal connecté (`User 1`, `User 2`, etc.) via séquence PostgreSQL `SERIAL` dans `registered_devices`.
   - Détection native du fabricant et modèle (`Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`).
