@@ -102,6 +102,12 @@ void main() {
     expect(find.text('Application Test'), findsOneWidget);
     expect(find.text('com.example.app'), findsOneWidget);
     expect(find.text('v1.2.3'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+
+    // Navigation vers l'onglet Profil via la Bottom Navigation Bar
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Test User'), findsOneWidget);
   });
 
@@ -140,9 +146,14 @@ void main() {
     await tester.tap(find.text(AppStrings.profileButtonSubmit));
     await tester.pumpAndSettle();
 
-    // 3. Arrivée directe sur le tableau de bord avec le pseudo et l'app
-    expect(find.text('Adama'), findsOneWidget);
+    // 3. Arrivée directe sur le tableau de bord avec navigation
     expect(find.text('Sample App'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+
+    // 4. Consultation du profil dans la Bottom Navigation Bar
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Adama'), findsOneWidget);
   });
 
   testWidgets('Actualise la liste automatiquement lors de la réception d\'un événement de paquet', (

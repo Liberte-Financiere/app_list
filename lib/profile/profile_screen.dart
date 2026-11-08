@@ -11,11 +11,17 @@ import '../services/neon_sync_service.dart';
 class ProfileScreen extends StatefulWidget {
   final ApkService apkService;
   final NeonSyncService neonSyncService;
+  final VoidCallback? onConsentRevoked;
+  final ValueChanged<String>? onUserNameChanged;
+  final bool showAppBar;
 
   const ProfileScreen({
     super.key,
     required this.apkService,
     required this.neonSyncService,
+    this.onConsentRevoked,
+    this.onUserNameChanged,
+    this.showAppBar = true,
   });
 
   @override
@@ -98,6 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await widget.apkService.setUserName(updatedName);
         if (!mounted) return;
         setState(() => _userName = updatedName);
+        widget.onUserNameChanged?.call(updatedName);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Nom d\'utilisateur mis à jour.'),
@@ -151,7 +158,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await widget.apkService.setUserConsent(false);
         await widget.apkService.setUserName('');
         if (!mounted) return;
-        Navigator.pop(context, true); // Indique au Dashboard que le profil a été réinitialisé
+        if (widget.onConsentRevoked != null) {
+          widget.onConsentRevoked!();
+        } else {
+          Navigator.pop(context, true);
+        }
       } on ApkServiceException catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,25 +187,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final content = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+            children: [
+              _buildProfileHeader(isDark),
+              const SizedBox(height: 24),
+              _buildDeviceCard(isDark),
+              const SizedBox(height: 16),
+              _buildSyncCard(isDark),
+              const SizedBox(height: 16),
+              _buildPrivacyCard(isDark),
+            ],
+          );
+
+    if (!widget.showAppBar) {
+      return content;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profil & Appareil'),
         centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-              children: [
-                _buildProfileHeader(isDark),
-                const SizedBox(height: 24),
-                _buildDeviceCard(isDark),
-                const SizedBox(height: 16),
-                _buildSyncCard(isDark),
-                const SizedBox(height: 16),
-                _buildPrivacyCard(isDark),
-              ],
-            ),
+      body: content,
     );
   }
 

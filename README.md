@@ -20,7 +20,10 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
 - **Consentement utilisateur & Personnalisation du profil** :
   - Parcours d'onboarding immersif en 2 étapes : consentement RGPD / Google Play puis saisie d'un pseudonyme / nom d'utilisateur personnalisé.
   - Persistance locale dans `SharedPreferences` : dès la validation initiale, les lancements ultérieurs ouvrent directement le tableau de bord sans ré-afficher l'onboarding.
-  - Attribution personnalisée sur la base Neon (`user_label`) et affichage du badge profil dans l'en-tête de l'application.
+  - Attribution personnalisée sur la base Neon (`user_label`).
+- **Navigation Material 3 épurée (`NavigationBar`)** :
+  - Barre de navigation inférieure séparant l'onglet **Accueil** (inventaire, recherche, filtres) et l'onglet **Profil** (caractéristiques de l'appareil, synchronisation Neon, gestion de la confidentialité).
+  - Préservation d'état fluide (`IndexedStack`) entre les onglets.
 
 ## Prérequis
 
