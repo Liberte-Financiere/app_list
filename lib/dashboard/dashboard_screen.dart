@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../models/apk_model.dart';
 import '../profile/profile_screen.dart';
@@ -161,10 +163,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final hasActiveSession = _hasConsent && (_userName != null && _userName!.isNotEmpty);
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         title: Text(_currentTab == 0 ? AppStrings.appName : 'Profil & Appareil'),
         actions: [
@@ -178,23 +186,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: _buildBody(),
       bottomNavigationBar: hasActiveSession
-          ? NavigationBar(
-              selectedIndex: _currentTab,
-              onDestinationSelected: (index) {
-                setState(() => _currentTab = index);
-              },
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.apps_outlined),
-                  selectedIcon: Icon(Icons.apps_rounded),
-                  label: 'Accueil',
+          ? Container(
+              margin: EdgeInsets.fromLTRB(
+                24,
+                0,
+                24,
+                bottomInset > 0 ? bottomInset + 4 : 16,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: isDark ? AppColors.cardBorderDark : AppColors.cardBorderLight,
+                  width: 1.2,
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline_rounded),
-                  selectedIcon: Icon(Icons.person_rounded),
-                  label: 'Profil',
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 45 : 18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: NavigationBar(
+                  height: 64,
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  selectedIndex: _currentTab,
+                  onDestinationSelected: (index) {
+                    HapticFeedback.lightImpact();
+                    setState(() => _currentTab = index);
+                  },
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.grid_view_outlined),
+                      selectedIcon: Icon(Icons.grid_view_rounded, color: AppColors.primary),
+                      label: 'Accueil',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.person_outline_rounded),
+                      selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+                      label: 'Profil',
+                    ),
+                  ],
                 ),
-              ],
+              ),
             )
           : null,
     );

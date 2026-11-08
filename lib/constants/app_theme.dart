@@ -22,13 +22,34 @@ abstract final class AppTheme {
       fontFamily: AppTypography.fontFamily,
       appBarTheme: AppBarTheme(
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.textPrimaryLight,
         centerTitle: false,
         titleTextStyle: AppTypography.titleLarge.copyWith(
           color: AppColors.textPrimaryLight,
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 64,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        indicatorColor: AppColors.primary.withAlpha(25),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppTypography.labelSmall.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            );
+          }
+          return AppTypography.labelSmall.copyWith(
+            color: AppColors.textSecondaryLight,
+          );
+        }),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surfaceLight,
@@ -89,13 +110,34 @@ abstract final class AppTheme {
       fontFamily: AppTypography.fontFamily,
       appBarTheme: AppBarTheme(
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: AppColors.textPrimaryDark,
         centerTitle: false,
         titleTextStyle: AppTypography.titleLarge.copyWith(
           color: AppColors.textPrimaryDark,
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 64,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        indicatorColor: AppColors.primary.withAlpha(45),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppTypography.labelSmall.copyWith(
+              color: AppColors.primaryLight,
+              fontWeight: FontWeight.bold,
+            );
+          }
+          return AppTypography.labelSmall.copyWith(
+            color: AppColors.textSecondaryDark,
+          );
+        }),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surfaceDark,
