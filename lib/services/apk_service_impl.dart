@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,26 @@ class ApkServiceImpl implements ApkService {
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
   static const MethodChannel _nativeChannel =
       MethodChannel('com.example.apk_list/native_details');
+
+  final StreamController<String> _packageChangeController =
+      StreamController<String>.broadcast();
+
+  ApkServiceImpl() {
+    _nativeChannel.setMethodCallHandler(_handleNativeCall);
+  }
+
+  Future<dynamic> _handleNativeCall(MethodCall call) async {
+    if (call.method == 'onPackageChanged') {
+      final data = call.arguments;
+      final String packageName = (data is Map && data['packageName'] is String)
+          ? data['packageName'] as String
+          : '';
+      _packageChangeController.add(packageName);
+    }
+  }
+
+  @override
+  Stream<String> get onPackageChanged => _packageChangeController.stream;
 
   @override
   Future<bool> hasUserConsent() async {

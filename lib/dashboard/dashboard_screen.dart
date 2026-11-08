@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../constants/app_strings.dart';
@@ -33,11 +34,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _searchQuery = '';
   String? _errorMessage;
   List<ApkModel> _allApps = const [];
+  StreamSubscription<String>? _packageSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkInitialConsent();
+    _listenToPackageChanges();
+  }
+
+  void _listenToPackageChanges() {
+    _packageSubscription = widget.apkService.onPackageChanged.listen((packageName) {
+      if (!mounted) return;
+      if (_hasConsent && !_isLoadingApps) {
+        debugPrint('Événement système reçu pour $packageName: actualisation de l\'inventaire');
+        _loadInstalledApps();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _packageSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkInitialConsent() async {

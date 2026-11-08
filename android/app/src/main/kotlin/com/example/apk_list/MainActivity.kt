@@ -1,5 +1,9 @@
 package com.example.apk_list
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
@@ -18,11 +22,38 @@ class MainActivity : FlutterActivity() {
     private val channelName = "com.example.apk_list/native_details"
     private val backgroundExecutor = Executors.newFixedThreadPool(2)
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var channel: MethodChannel? = null
+    private var dynamicPackageReceiver: BroadcastReceiver? = null
+
+    companion object {
+        private var activeInstance: MainActivity? = null
+
+        /**
+         * Notifie Flutter qu'un événement système sur un paquet (ajout, suppression, màj) est survenu.
+         */
+        fun notifyPackageChange(action: String, packageName: String) {
+            activeInstance?.let { activity ->
+                activity.mainHandler.post {
+                    activity.channel?.invokeMethod(
+                        "onPackageChanged",
+                        mapOf(
+                            "action" to action,
+                            "packageName" to packageName
+                        )
+                    )
+                }
+            }
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        activeInstance = this
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
+        val methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+        channel = methodChannel
+
+        methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "getAppsDetails" -> {
                     val packageNames = call.argument<List<String>>("packages")
@@ -41,6 +72,38 @@ class MainActivity : FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+        }
+
+        registerDynamicPackageReceiver()
+    }
+
+    private fun registerDynamicPackageReceiver() {
+        if (dynamicPackageReceiver != null) return
+
+        dynamicPackageReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent == null) return
+                val action = intent.action ?: return
+                val packageName = intent.data?.schemeSpecificPart ?: ""
+                notifyPackageChange(action, packageName)
+            }
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(dynamicPackageReceiver, filter, Context.RECEIVER_EXPORTED)
+            } else {
+                registerReceiver(dynamicPackageReceiver, filter)
+            }
+        } catch (_: Exception) {
+            // Ignoré si les permissions système restreignent l'enregistrement dynamique
         }
     }
 
@@ -144,6 +207,17 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        dynamicPackageReceiver?.let {
+            try {
+                unregisterReceiver(it)
+            } catch (_: Exception) {
+            }
+            dynamicPackageReceiver = null
+        }
+        if (activeInstance == this) {
+            activeInstance = null
+        }
+        channel = null
         backgroundExecutor.shutdown()
         super.onDestroy()
     }

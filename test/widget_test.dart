@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -9,6 +10,8 @@ import 'package:apk_list/services/apk_service.dart';
 class MockApkService implements ApkService {
   bool _consent;
   final List<ApkModel> _apps;
+  final StreamController<String> _packageChangeController =
+      StreamController<String>.broadcast();
 
   MockApkService({
     bool initialConsent = false,
@@ -36,6 +39,13 @@ class MockApkService implements ApkService {
 
   @override
   Future<void> openAppSettings(String packageName) async {}
+
+  @override
+  Stream<String> get onPackageChanged => _packageChangeController.stream;
+
+  void emitPackageChanged(String packageName) {
+    _packageChangeController.add(packageName);
+  }
 }
 
 void main() {
@@ -79,5 +89,37 @@ void main() {
     expect(find.text('Application Test'), findsOneWidget);
     expect(find.text('com.example.app'), findsOneWidget);
     expect(find.text('v1.2.3'), findsOneWidget);
+  });
+
+  testWidgets('Actualise la liste automatiquement lors de la réception d\'un événement de paquet', (
+    WidgetTester tester,
+  ) async {
+    final app1 = ApkModel(
+      id: 'com.app.one',
+      name: 'App One',
+      packageName: 'com.app.one',
+      versionName: '1.0',
+      versionCode: 1,
+      sizeInBytes: 1000,
+      filePath: '',
+      installDate: DateTime(2026, 1, 1),
+    );
+
+    final mockService = MockApkService(
+      initialConsent: true,
+      apps: [app1],
+    );
+
+    await tester.pumpWidget(ApkApp(apkService: mockService));
+    await tester.pumpAndSettle();
+
+    expect(find.text('App One'), findsOneWidget);
+
+    // Émission d'un événement système simulé
+    mockService.emitPackageChanged('com.app.two');
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('App One'), findsOneWidget);
   });
 }

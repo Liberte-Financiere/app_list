@@ -27,4 +27,7 @@ abstract class ApkService {
 
   /// Ouvre la page des paramètres système de l'application ciblée.
   Future<void> openAppSettings(String packageName);
+
+  /// Flux notifiant les ajouts, suppressions ou mises à jour de paquets sur l'appareil.
+  Stream<String> get onPackageChanged;
 }
