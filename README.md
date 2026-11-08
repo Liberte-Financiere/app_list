@@ -51,11 +51,16 @@ lib/
 │   ├── app_theme.dart           # Configuration globale Material 3
 │   └── app_constants.dart       # Exporteur et constantes de routage
 ├── models/
-│   └── apk_model.dart           # Modèle métier immuable avec validation stricte
+│   ├── apk_model.dart           # Modèle métier des applications scannées
+│   ├── device_model.dart        # Modèle représentant la table Neon 'registered_devices'
+│   └── inventory_item_model.dart # Modèle représentant la table Neon 'device_inventory'
 ├── services/
-│   ├── apk_service.dart         # Contrat d'interface du service
-│   ├── apk_service_impl.dart    # Implémentation de production (I/O & cache)
-│   └── neon_sync_service.dart   # Synchronisation sécurisée Neon PostgreSQL (TLS/SSL)
+│   ├── apk_service.dart         # Contrat d'interface du service d'applications
+│   ├── apk_service_impl.dart    # Implémentation Android native (I/O & cache)
+│   ├── neon_connection_manager.dart # Gestionnaire de connexion TLS/SSL Neon
+│   ├── device_service.dart      # Service dédié à la table 'registered_devices' (User X)
+│   ├── inventory_service.dart   # Service dédié à la table 'device_inventory' (UPSERT batch)
+│   └── neon_sync_service.dart   # Orchestrateur de synchronisation Neon
 ├── dashboard/
 │   ├── widgets/
 │   │   ├── app_list_item.dart   # Carte d'application moderne avec badges et actions
