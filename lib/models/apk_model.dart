@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Modèle immuable représentant une application installée ou un package APK.
+/// Modèle métier immuable représentant une application avec ses métadonnées techniques.
 @immutable
 class ApkModel {
   final String id;
@@ -11,6 +11,8 @@ class ApkModel {
   final int sizeInBytes;
   final String filePath;
   final DateTime installDate;
+  final DateTime? lastUpdateDate;
+  final int targetSdkVersion;
   final Uint8List? iconBytes;
   final bool isSystemApp;
 
@@ -23,6 +25,8 @@ class ApkModel {
     required this.sizeInBytes,
     required this.filePath,
     required this.installDate,
+    this.lastUpdateDate,
+    this.targetSdkVersion = 0,
     this.iconBytes,
     this.isSystemApp = false,
   });
@@ -76,6 +80,11 @@ class ApkModel {
       throw const FormatException('Champ "installDate" invalide ou absent.');
     }
 
+    DateTime? lastUpdateDate;
+    if (json['lastUpdateDate'] is String) {
+      lastUpdateDate = DateTime.tryParse(json['lastUpdateDate'] as String);
+    }
+
     return ApkModel(
       id: id.trim(),
       name: name.trim(),
@@ -85,6 +94,8 @@ class ApkModel {
       sizeInBytes: sizeInBytes,
       filePath: filePath.trim(),
       installDate: installDate,
+      lastUpdateDate: lastUpdateDate,
+      targetSdkVersion: json['targetSdkVersion'] is int ? json['targetSdkVersion'] as int : 0,
       isSystemApp: json['isSystemApp'] == true,
     );
   }
@@ -98,17 +109,22 @@ class ApkModel {
         'sizeInBytes': sizeInBytes,
         'filePath': filePath,
         'installDate': installDate.toIso8601String(),
+        'lastUpdateDate': lastUpdateDate?.toIso8601String(),
+        'targetSdkVersion': targetSdkVersion,
         'isSystemApp': isSystemApp,
       };
 
-  /// Retourne la taille formatée lisiblement.
+  /// Retourne la taille formatée lisiblement (ex: 24.5 Mo).
   String get formattedSize {
-    if (sizeInBytes <= 0) return 'Taille non renseignée';
+    if (sizeInBytes <= 0) return 'Taille non dispo';
     if (sizeInBytes < 1024) return '$sizeInBytes o';
     if (sizeInBytes < 1024 * 1024) {
       return '${(sizeInBytes / 1024).toStringAsFixed(1)} Ko';
     }
-    return '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(1)} Mo';
+    if (sizeInBytes < 1024 * 1024 * 1024) {
+      return '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(1)} Mo';
+    }
+    return '${(sizeInBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} Go';
   }
 
   ApkModel copyWith({
@@ -120,6 +136,8 @@ class ApkModel {
     int? sizeInBytes,
     String? filePath,
     DateTime? installDate,
+    DateTime? lastUpdateDate,
+    int? targetSdkVersion,
     Uint8List? iconBytes,
     bool? isSystemApp,
   }) {
@@ -132,6 +150,8 @@ class ApkModel {
       sizeInBytes: sizeInBytes ?? this.sizeInBytes,
       filePath: filePath ?? this.filePath,
       installDate: installDate ?? this.installDate,
+      lastUpdateDate: lastUpdateDate ?? this.lastUpdateDate,
+      targetSdkVersion: targetSdkVersion ?? this.targetSdkVersion,
       iconBytes: iconBytes ?? this.iconBytes,
       isSystemApp: isSystemApp ?? this.isSystemApp,
     );
@@ -150,5 +170,5 @@ class ApkModel {
 
   @override
   String toString() =>
-      'ApkModel(id: $id, name: $name, packageName: $packageName, version: $versionName, isSystem: $isSystemApp)';
+      'ApkModel(id: $id, name: $name, packageName: $packageName, version: $versionName, size: $formattedSize)';
 }

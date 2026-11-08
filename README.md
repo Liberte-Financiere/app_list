@@ -1,6 +1,17 @@
 # apk_list
 
-Application Flutter moderne pour répertorier, filtrer et lancer les applications installées sur l'appareil Android, avec architecture modulaire orientée services et design Material 3 soigné.
+Application Flutter moderne pour répertorier, filtrer et inspecter les applications installées sur l'appareil Android (taille du package APK, dates d'installation et mise à jour, niveau SDK, chemin binaire), avec architecture modulaire orientée services et design Material 3 soigné.
+
+## Fonctionnalités Clés
+
+- **Inventaire complet des applications** : Détection des applications tierces et système.
+- **Métadonnées techniques étendues** :
+  - Taille réelle du binaire APK sur le stockage (`sizeInBytes` formaté en Ko/Mo/Go).
+  - Date d'installation initiale (`firstInstallTime`) et date de dernière mise à jour (`lastUpdateTime`).
+  - Niveau de SDK Android cible (`targetSdkVersion`) et chemin absolu du fichier APK (`sourceDir`).
+- **Canal natif Android optimisé** : Extraction multithreadée via `MethodChannel` (`Executors.newFixedThreadPool`) pour éviter tout blocage du thread principal UI.
+- **Fiche modale d'inspection** : Affichage détaillé par application avec actions rapides (lancement, accès aux paramètres système).
+- **Consentement utilisateur (Prominent Disclosure)** : Gestion conforme aux règles Google Play et RGPD pour `QUERY_ALL_PACKAGES`.
 
 ## Prérequis
 
