@@ -12,6 +12,9 @@
     <!--                                                                            -->
     <!-- Conformité Play Store : Cas d'usage valide pour les gestionnaires d'apps.   -->
     <!-- ========================================================================== -->
+    <!-- Permission requise pour synchroniser les métadonnées avec la base de données Neon -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />

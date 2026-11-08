@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:apk_list/constants/app_strings.dart';
 import 'package:apk_list/main.dart';
 import 'package:apk_list/models/apk_model.dart';
@@ -37,6 +39,11 @@ class MockApkService implements ApkService {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
   testWidgets('Demande le consentement si non accordé au démarrage', (WidgetTester tester) async {
     final mockService = MockApkService(initialConsent: false);
 

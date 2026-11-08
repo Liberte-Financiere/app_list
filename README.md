@@ -51,7 +51,8 @@ lib/
 │   └── apk_model.dart           # Modèle métier immuable avec validation stricte
 ├── services/
 │   ├── apk_service.dart         # Contrat d'interface du service
-│   └── apk_service_impl.dart    # Implémentation de production (I/O & cache)
+│   ├── apk_service_impl.dart    # Implémentation de production (I/O & cache)
+│   └── neon_sync_service.dart   # Synchronisation sécurisée Neon PostgreSQL (TLS/SSL)
 ├── dashboard/
 │   ├── widgets/
 │   │   ├── app_list_item.dart   # Carte d'application moderne avec badges et actions
@@ -80,6 +81,20 @@ flutter test
 ```
 
 ### Exécution de l'application
+
+#### Mode standard
 ```bash
 flutter run
 ```
+
+#### Mode synchronisation Neon (Usage personnel)
+1. Dupliquez [.env.example](.env.example) en `.env` :
+   ```bash
+   cp .env.example .env
+   ```
+2. Renseignez vos identifiants Neon dans `.env` (hôte, utilisateur, mot de passe). Le fichier `.env` est strictement ignoré par Git.
+3. Lancez l'application avec injection sécurisée des variables d'environnement :
+   ```bash
+   flutter run --dart-define-from-file=.env
+   ```
+4. Cliquez sur l'icône de synchronisation nuage dans la barre supérieure de l'application pour synchroniser la liste d'applications vers la table `device_inventory` de Neon.
