@@ -119,3 +119,17 @@ flutter run
    flutter run --dart-define-from-file=.env
    ```
 4. La synchronisation vers la table `device_inventory` de Neon s'effectue automatiquement en arrière-plan à chaque ouverture ou actualisation de l'inventaire, sans aucun bouton manuel ni blocage de l'interface.
+
+### Génération & Installation de l'APK (Release avec .env)
+
+#### 1. Compiler le package APK
+```bash
+flutter build apk --dart-define-from-file=.env
+```
+Le fichier binaire généré est situé dans :
+`build/app/outputs/flutter-apk/app-release.apk`
+
+#### 2. Installer directement sur smartphone Android (via USB / ADB)
+```bash
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
