@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../models/apk_model.dart';
+import '../profile/profile_screen.dart';
 import '../services/apk_service.dart';
 import '../services/neon_sync_service.dart';
 import 'widgets/app_list_item.dart';
@@ -107,23 +108,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _revokeConsent() async {
-    try {
-      await widget.apkService.setUserConsent(false);
-      await widget.apkService.setUserName('');
-      if (!mounted) return;
-      setState(() {
-        _hasConsent = false;
-        _userName = null;
-        _allApps = const [];
-        _searchQuery = '';
-      });
-    } on ApkServiceException catch (e) {
-      if (!mounted) return;
-      _showSnackBar(e.message);
-    }
-  }
-
   Future<void> _loadInstalledApps() async {
     setState(() {
       _isLoadingApps = true;
@@ -175,6 +159,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).toList();
   }
 
+  Future<void> _openProfileScreen() async {
+    final reset = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileScreen(
+          apkService: widget.apkService,
+          neonSyncService: widget.neonSyncService,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (reset == true) {
+      setState(() {
+        _hasConsent = false;
+        _userName = null;
+        _allApps = const [];
+        _searchQuery = '';
+      });
+    } else {
+      final updatedName = await widget.apkService.getUserName();
+      if (mounted && updatedName != null && updatedName != _userName) {
+        setState(() => _userName = updatedName);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasActiveSession = _hasConsent && (_userName != null && _userName!.isNotEmpty);
@@ -185,20 +196,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text(AppStrings.appName),
         actions: [
           if (hasActiveSession) ...[
-            Center(
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: AppStrings.actionRefresh,
+              onPressed: _isLoadingApps ? null : _loadInstalledApps,
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: _openProfileScreen,
               child: Container(
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                margin: const EdgeInsets.only(right: 12, left: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withAlpha(50)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withAlpha(60)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.person_rounded, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 4),
+                    CircleAvatar(
+                      radius: 11,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        _userName!.isNotEmpty ? _userName![0].toUpperCase() : 'U',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     Text(
                       _userName!,
                       style: const TextStyle(
@@ -210,22 +239,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              tooltip: AppStrings.actionRefresh,
-              onPressed: _isLoadingApps ? null : _loadInstalledApps,
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'revoke') _revokeConsent();
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'revoke',
-                  child: Text(AppStrings.actionRevokeConsent),
-                ),
-              ],
             ),
           ],
         ],

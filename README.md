@@ -74,7 +74,9 @@ lib/
 │   │   ├── neon_status_banner.dart # Bannière réactive de confirmation backend (preuve d'envoi)
 │   │   ├── search_filter_bar.dart # Barre de recherche et filtres de paquets
 │   │   └── status_view.dart     # Gestion unifiée des états (chargement, erreur, vide)
-│   └── dashboard_screen.dart    # Orchestrateur du tableau de bord
+│   └── dashboard_screen.dart    # Orchestrateur du tableau de bord épuré
+├── profile/
+│   └── profile_screen.dart      # Écran dédié au profil, informations terminal et confidentialité
 └── main.dart                    # Point d'entrée avec injection et thèmes configurés
 ```
 
