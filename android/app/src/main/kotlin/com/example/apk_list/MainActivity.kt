@@ -139,12 +139,12 @@ class MainActivity : FlutterActivity() {
                             pm.getApplicationInfo(pkgName, 0)
                         }
 
-                        // Demande à Android de lire les permissions déclarées dans le Manifest de cette app
+                        // Récupération des informations de base du package (sans flag GET_PERMISSIONS pour optimiser la mémoire et les I/O)
                         val pkgInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()))
+                            pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(0))
                         } else {
                             @Suppress("DEPRECATION")
-                            pm.getPackageInfo(pkgName, PackageManager.GET_PERMISSIONS)
+                            pm.getPackageInfo(pkgName, 0)
                         }
 
                         // Mesure de la taille réelle du fichier APK stocké sur le disque
@@ -173,17 +173,6 @@ class MainActivity : FlutterActivity() {
                             null
                         }
 
-                        // Comparaison de l'état système : l'autorisation est-elle accordée (1) ou refusée (0) ?
-                        val requestedPermissions = pkgInfo.requestedPermissions ?: emptyArray()
-                        val requestedFlags = pkgInfo.requestedPermissionsFlags ?: IntArray(0)
-                        val grantedPermissions = ArrayList<String>()
-
-                        for (i in requestedPermissions.indices) {
-                            if (i < requestedFlags.size && (requestedFlags[i] and android.content.pm.PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0) {
-                                grantedPermissions.add(requestedPermissions[i])
-                            }
-                        }
-
                         val itemDetails = HashMap<String, Any>()
                         itemDetails["sizeInBytes"] = sizeInBytes
                         itemDetails["firstInstallTime"] = pkgInfo.firstInstallTime
@@ -191,8 +180,6 @@ class MainActivity : FlutterActivity() {
                         itemDetails["targetSdkVersion"] = appInfo.targetSdkVersion
                         itemDetails["sourceDir"] = sourceDir ?: ""
                         itemDetails["installerPackageName"] = installerPackageName ?: ""
-                        itemDetails["grantedPermissions"] = grantedPermissions
-                        itemDetails["declaredPermissions"] = requestedPermissions.toList()
 
                         detailsMap[pkgName] = itemDetails
                     } catch (_: PackageManager.NameNotFoundException) {

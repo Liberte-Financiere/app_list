@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:apk_list/models/apk_model.dart';
+import 'package:apk_list/models/apk_permissions_model.dart';
 
 void main() {
   group('ApkModel', () {
@@ -18,8 +19,6 @@ void main() {
         targetSdkVersion: 34,
         isSystemApp: false,
         installerPackageName: 'com.android.vending',
-        grantedPermissions: const ['android.permission.INTERNET'],
-        declaredPermissions: const ['android.permission.INTERNET', 'android.permission.CAMERA'],
       );
 
       final json = model.toJson();
@@ -39,8 +38,8 @@ void main() {
       expect(fromJson.isSystemApp, false);
       expect(fromJson.installerPackageName, 'com.android.vending');
       expect(fromJson.installerDisplayName, 'Google Play Store');
-      expect(fromJson.grantedPermissions, ['android.permission.INTERNET']);
-      expect(fromJson.declaredPermissions, ['android.permission.INTERNET', 'android.permission.CAMERA']);
+      expect(json.containsKey('grantedPermissions'), isFalse);
+      expect(json.containsKey('declaredPermissions'), isFalse);
     });
 
     test('Résolution du nom du magasin d\'installation', () {
@@ -147,6 +146,23 @@ void main() {
         ).formattedSize,
         '1.0 Mo',
       );
+    });
+  });
+
+  group('ApkPermissionsModel', () {
+    test('Sérialisation et instanciation découplée', () {
+      const perms = ApkPermissionsModel(
+        packageName: 'com.example.app',
+        declaredPermissions: ['android.permission.INTERNET'],
+        grantedPermissions: ['android.permission.INTERNET'],
+      );
+
+      final json = perms.toJson();
+      final fromJson = ApkPermissionsModel.fromJson(json);
+
+      expect(fromJson.packageName, 'com.example.app');
+      expect(fromJson.declaredPermissions, ['android.permission.INTERNET']);
+      expect(fromJson.grantedPermissions, ['android.permission.INTERNET']);
     });
   });
 }

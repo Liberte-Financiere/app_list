@@ -6,14 +6,7 @@ import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../models/apk_model.dart';
 
-/// Filtre appliqué sur la liste des permissions de l'application.
-enum PermissionFilter {
-  all,
-  granted,
-  denied,
-}
-
-/// Écran complet dédié à la consultation approfondie des métadonnées et permissions d'une application.
+/// Écran complet dédié à la consultation approfondie des métadonnées d'une application.
 class AppDetailsScreen extends StatefulWidget {
   final ApkModel app;
   final VoidCallback onLaunch;
@@ -31,9 +24,6 @@ class AppDetailsScreen extends StatefulWidget {
 }
 
 class _AppDetailsScreenState extends State<AppDetailsScreen> {
-  PermissionFilter _permissionFilter = PermissionFilter.all;
-  String _permissionSearchQuery = '';
-
   ApkModel get app => widget.app;
 
   void _copyToClipboard(String text, String feedbackMessage) {
@@ -106,22 +96,6 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
       default:
         return apiLevel > 35 ? 'API $apiLevel (Android 15+)' : 'API $apiLevel';
     }
-  }
-
-  List<String> get _filteredPermissions {
-    final query = _permissionSearchQuery.trim().toLowerCase();
-    return app.declaredPermissions.where((permission) {
-      final isGranted = app.grantedPermissions.contains(permission);
-      final matchesFilter = switch (_permissionFilter) {
-        PermissionFilter.all => true,
-        PermissionFilter.granted => isGranted,
-        PermissionFilter.denied => !isGranted,
-      };
-      if (!matchesFilter) return false;
-      if (query.isEmpty) return true;
-      final simpleName = permission.replaceFirst('android.permission.', '').toLowerCase();
-      return permission.toLowerCase().contains(query) || simpleName.contains(query);
-    }).toList();
   }
 
   @override
@@ -548,11 +522,6 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
   }
 
   Widget _buildPermissionsSection(bool isDark) {
-    final declaredCount = app.declaredPermissions.length;
-    final grantedCount = app.grantedPermissions.length;
-    final deniedCount = (declaredCount - grantedCount).clamp(0, declaredCount);
-    final filteredList = _filteredPermissions;
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -577,134 +546,14 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                     style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$grantedCount / $declaredCount',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              declaredCount == 0
-                  ? 'Cette application ne demande aucune permission spécifique.'
-                  : '$grantedCount accordée(s) et $deniedCount non accordée(s) sur un total de $declaredCount déclarée(s).',
+              'Afin d\'optimiser les performances de scan et de respecter la confidentialité, les autorisations ne sont pas lues en masse via le PackageManager. Vous pouvez inspecter et configurer les droits d\'accès accordés à cette application directement dans les paramètres système Android.',
               style: AppTypography.bodySmall.copyWith(color: Colors.grey[600]),
             ),
-            if (declaredCount > 0) ...[
-              const SizedBox(height: 14),
-              SegmentedButton<PermissionFilter>(
-                segments: [
-                  ButtonSegment(
-                    value: PermissionFilter.all,
-                    label: Text('Toutes ($declaredCount)', style: const TextStyle(fontSize: 11)),
-                  ),
-                  ButtonSegment(
-                    value: PermissionFilter.granted,
-                    label: Text('Accordées ($grantedCount)', style: const TextStyle(fontSize: 11)),
-                  ),
-                  ButtonSegment(
-                    value: PermissionFilter.denied,
-                    label: Text('Refusées ($deniedCount)', style: const TextStyle(fontSize: 11)),
-                  ),
-                ],
-                selected: {_permissionFilter},
-                onSelectionChanged: (newSelection) {
-                  setState(() => _permissionFilter = newSelection.first);
-                },
-              ),
-              if (declaredCount > 4) ...[
-                const SizedBox(height: 12),
-                TextField(
-                  onChanged: (val) => setState(() => _permissionSearchQuery = val),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: 'Filtrer les permissions...',
-                    hintStyle: AppTypography.bodySmall.copyWith(color: Colors.grey),
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: isDark ? AppColors.cardBorderDark : AppColors.cardBorderLight,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              if (filteredList.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'Aucune permission correspondante.',
-                      style: AppTypography.bodySmall.copyWith(color: Colors.grey),
-                    ),
-                  ),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: filteredList.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final perm = filteredList[index];
-                    final isGranted = app.grantedPermissions.contains(perm);
-                    final simpleName = perm.replaceFirst('android.permission.', '');
-
-                    return ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                      leading: Icon(
-                        isGranted ? Icons.check_circle_rounded : Icons.cancel_outlined,
-                        color: isGranted ? Colors.green : Colors.red[400],
-                        size: 20,
-                      ),
-                      title: SelectableText(
-                        simpleName,
-                        style: AppTypography.bodySmall.copyWith(
-                          fontWeight: isGranted ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                      subtitle: SelectableText(
-                        perm,
-                        style: AppTypography.labelSmall.copyWith(
-                          fontSize: 10,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isGranted ? Colors.green.withAlpha(25) : Colors.red.withAlpha(25),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          isGranted ? 'Accordée' : 'Refusée',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isGranted ? Colors.green[800] : Colors.red[800],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            ],
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             OutlinedButton.icon(
               icon: const Icon(Icons.tune_rounded, size: 18),
               label: const Text(AppStrings.managePermissionsInSettings),

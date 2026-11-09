@@ -10,10 +10,13 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
   - Date d'installation initiale (`firstInstallTime`) et date de dernière mise à jour (`lastUpdateTime`).
   - Niveau de SDK Android cible (`targetSdkVersion`) et chemin absolu du fichier APK (`sourceDir`).
   - Source d'installation identifiée (`installerPackageName` / `installerDisplayName`) : Google Play Store, Navigateur Phoenix, Sideload APK direct, Amazon Appstore, etc.
-  - Audit des permissions du manifest : distinction précise entre permissions déclarées et permissions effectivement accordées (`grantedPermissions`).
-- **Canal natif Android optimisé** : Extraction multithreadée via `MethodChannel` (`Executors.newFixedThreadPool`) pour éviter tout blocage du thread principal UI.
+- **Optimisation & Respect de la vie privée (Scan léger)** :
+  - Suppression de la lecture lourde des permissions en masse (`packageInfo.requestedPermissions`) via le `PackageManager` Android lors de l'inventaire.
+  - Élimination des champs de permissions du payload de synchronisation pour alléger les transferts et la base.
+  - Modèle découplé [`ApkPermissionsModel`](lib/models/apk_permissions_model.dart) pour la maintenabilité et l'évolutivité future.
+- **Canal natif Android optimisé** : Extraction multithreadée via `MethodChannel` (`Executors.newFixedThreadPool`) avec flags minimaux (`PackageInfoFlags.of(0)`) pour garantir une fluidité absolue.
 - **Récepteur d'événements système (`BroadcastReceiver`)** : Écoute passive et silencieuse de `PACKAGE_ADDED`, `PACKAGE_REMOVED` et `PACKAGE_REPLACED` avec rafraîchissement automatique en temps réel de l'inventaire sans surconsommation de batterie.
-- **Page dédiée d'inspection détaillée (`AppDetailsScreen`)** : Vue plein écran ergonomique remplaçant les pop-ups/modales pour une lisibilité maximale de toutes les informations techniques (package avec copie en 1 clic, version, build, SDK Android cible, source du magasin, chemin binaire APK copiable, dates d'installation et de mise à jour, taille exacte en octets) ainsi qu'un audit interactif des permissions système avec filtrage réactif (Toutes / Accordées / Refusées), recherche textuelle et accès direct aux paramètres Android.
+- **Page dédiée d'inspection détaillée (`AppDetailsScreen`)** : Vue plein écran ergonomique pour une lisibilité maximale de toutes les métadonnées (package avec copie en 1 clic, version, build, SDK Android cible, source du magasin, chemin binaire APK copiable, dates d'installation et de mise à jour, taille exacte en octets) et raccourci direct vers les réglages système Android pour la gestion des autorisations.
 - **Attribution atomique des utilisateurs & Modèles d'appareils** :
   - Identification automatique de chaque terminal connecté (`User 1`, `User 2`, etc.) via séquence PostgreSQL `SERIAL` dans `registered_devices`.
   - Détection native du fabricant et modèle (`Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`).
@@ -61,7 +64,8 @@ lib/
 │   ├── app_theme.dart           # Configuration globale Material 3
 │   └── app_constants.dart       # Exporteur et constantes de routage
 ├── models/
-│   ├── apk_model.dart           # Modèle métier des applications scannées
+│   ├── apk_model.dart           # Modèle métier optimisé des applications scannées (sans champs permissions)
+│   ├── apk_permissions_model.dart # Modèle dédié et découplé des permissions (flexibilité & maintenance)
 │   ├── device_model.dart        # Modèle représentant la table Neon 'registered_devices'
 │   └── inventory_item_model.dart # Modèle représentant la table Neon 'device_inventory'
 ├── services/

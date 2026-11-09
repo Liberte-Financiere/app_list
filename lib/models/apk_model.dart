@@ -16,8 +16,6 @@ class ApkModel {
   final Uint8List? iconBytes;
   final bool isSystemApp;
   final String installerPackageName;
-  final List<String> grantedPermissions;
-  final List<String> declaredPermissions;
 
   const ApkModel({
     required this.id,
@@ -33,8 +31,6 @@ class ApkModel {
     this.iconBytes,
     this.isSystemApp = false,
     this.installerPackageName = '',
-    this.grantedPermissions = const [],
-    this.declaredPermissions = const [],
   });
 
   /// Factory avec validation stricte des données d'entrée.
@@ -104,12 +100,6 @@ class ApkModel {
       targetSdkVersion: json['targetSdkVersion'] is int ? json['targetSdkVersion'] as int : 0,
       isSystemApp: json['isSystemApp'] == true,
       installerPackageName: json['installerPackageName'] is String ? (json['installerPackageName'] as String).trim() : '',
-      grantedPermissions: json['grantedPermissions'] is List
-          ? (json['grantedPermissions'] as List).whereType<String>().map((e) => e.trim()).toList()
-          : const [],
-      declaredPermissions: json['declaredPermissions'] is List
-          ? (json['declaredPermissions'] as List).whereType<String>().map((e) => e.trim()).toList()
-          : const [],
     );
   }
 
@@ -126,8 +116,6 @@ class ApkModel {
         'targetSdkVersion': targetSdkVersion,
         'isSystemApp': isSystemApp,
         'installerPackageName': installerPackageName,
-        'grantedPermissions': grantedPermissions,
-        'declaredPermissions': declaredPermissions,
       };
 
   /// Retourne le nom lisible du magasin ou de la source d'installation.
@@ -178,8 +166,6 @@ class ApkModel {
     Uint8List? iconBytes,
     bool? isSystemApp,
     String? installerPackageName,
-    List<String>? grantedPermissions,
-    List<String>? declaredPermissions,
   }) {
     return ApkModel(
       id: id ?? this.id,
@@ -195,8 +181,6 @@ class ApkModel {
       iconBytes: iconBytes ?? this.iconBytes,
       isSystemApp: isSystemApp ?? this.isSystemApp,
       installerPackageName: installerPackageName ?? this.installerPackageName,
-      grantedPermissions: grantedPermissions ?? this.grantedPermissions,
-      declaredPermissions: declaredPermissions ?? this.declaredPermissions,
     );
   }
 

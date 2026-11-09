@@ -19,15 +19,6 @@ void main() {
     targetSdkVersion: 34,
     isSystemApp: false,
     installerPackageName: 'com.android.vending',
-    declaredPermissions: const [
-      'android.permission.INTERNET',
-      'android.permission.CAMERA',
-      'android.permission.RECORD_AUDIO',
-    ],
-    grantedPermissions: const [
-      'android.permission.INTERNET',
-      'android.permission.CAMERA',
-    ],
   );
 
   testWidgets('Ouvre AppDetailsScreen lors du clic sur la carte ou le bouton détails', (
@@ -55,7 +46,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.info_outline_rounded));
     await tester.pumpAndSettle();
 
-    // Vérifie que l'écran AppDetailsScreen est ouvert (pas un AlertDialog ou SimpleDialog)
+    // Vérifie que l'écran AppDetailsScreen est ouvert
     expect(find.byType(AppDetailsScreen), findsOneWidget);
     expect(find.text(AppStrings.detailsScreenTitle), findsOneWidget);
     expect(find.text('Super Application'), findsWidgets);
@@ -69,15 +60,17 @@ void main() {
     expect(settingsOpened, isTrue);
   });
 
-  testWidgets('Affiche correctement toutes les métadonnées techniques et permissions', (
+  testWidgets('Affiche correctement toutes les métadonnées techniques et la section sécurité', (
     WidgetTester tester,
   ) async {
+    bool settingsOpened = false;
+
     await tester.pumpWidget(
       MaterialApp(
         home: AppDetailsScreen(
           app: testApp,
           onLaunch: () {},
-          onSettings: () {},
+          onSettings: () => settingsOpened = true,
         ),
       ),
     );
@@ -95,62 +88,13 @@ void main() {
     expect(find.text('10/02/2026 à 14:30'), findsOneWidget);
     expect(find.text('01/03/2026 à 09:15'), findsOneWidget);
 
-    // Section permissions
+    // Section autorisations système (délégation sécurisée sans scan lourd de packageInfo)
     expect(find.text(AppStrings.permissionsTitle), findsOneWidget);
-    expect(find.text('2 / 3'), findsOneWidget);
-    expect(find.text('INTERNET'), findsOneWidget);
-    expect(find.text('CAMERA'), findsOneWidget);
-    expect(find.text('RECORD_AUDIO'), findsOneWidget);
-    expect(find.text('Accordée'), findsNWidgets(2));
-    expect(find.text('Refusée'), findsOneWidget);
+    expect(find.text(AppStrings.managePermissionsInSettings), findsOneWidget);
 
-    // Filtrage par permission refusée
-    await tester.ensureVisible(find.text('Refusées (1)'));
+    await tester.ensureVisible(find.text(AppStrings.managePermissionsInSettings));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Refusées (1)'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('RECORD_AUDIO'), findsOneWidget);
-    expect(find.text('CAMERA'), findsNothing);
-    expect(find.text('INTERNET'), findsNothing);
-
-    // Filtrage par permission accordée
-    await tester.ensureVisible(find.text('Accordées (2)'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Accordées (2)'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('INTERNET'), findsOneWidget);
-    expect(find.text('CAMERA'), findsOneWidget);
-    expect(find.text('RECORD_AUDIO'), findsNothing);
-  });
-
-  testWidgets('Affiche un message adéquat lorsque l\'application n\'a pas de permissions', (
-    WidgetTester tester,
-  ) async {
-    final minimalApp = ApkModel(
-      id: 'com.simple.app',
-      name: 'Simple App',
-      packageName: 'com.simple.app',
-      versionName: '1.0',
-      versionCode: 1,
-      sizeInBytes: 1024,
-      filePath: '',
-      installDate: DateTime(2026, 1, 1),
-      declaredPermissions: const [],
-      grantedPermissions: const [],
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: AppDetailsScreen(
-          app: minimalApp,
-          onLaunch: () {},
-          onSettings: () {},
-        ),
-      ),
-    );
-
-    expect(find.text('Cette application ne demande aucune permission spécifique.'), findsOneWidget);
+    await tester.tap(find.text(AppStrings.managePermissionsInSettings));
+    expect(settingsOpened, isTrue);
   });
 }

@@ -145,22 +145,6 @@ class ApkServiceImpl implements ApkService {
                 ? pkgDetails['installerPackageName'] as String
                 : '';
 
-        final List<String> grantedPermissions =
-            (pkgDetails is Map && pkgDetails['grantedPermissions'] is List)
-                ? (pkgDetails['grantedPermissions'] as List)
-                    .whereType<String>()
-                    .map((e) => e.trim())
-                    .toList()
-                : const [];
-
-        final List<String> declaredPermissions =
-            (pkgDetails is Map && pkgDetails['declaredPermissions'] is List)
-                ? (pkgDetails['declaredPermissions'] as List)
-                    .whereType<String>()
-                    .map((e) => e.trim())
-                    .toList()
-                : const [];
-
         final installDate = firstInstallTime > 0
             ? DateTime.fromMillisecondsSinceEpoch(firstInstallTime)
             : (installTimestamp > 0
@@ -185,8 +169,6 @@ class ApkServiceImpl implements ApkService {
           iconBytes: app.icon,
           isSystemApp: app.isSystemApp,
           installerPackageName: installerPackageName,
-          grantedPermissions: grantedPermissions,
-          declaredPermissions: declaredPermissions,
         );
       }).toList();
 
@@ -254,19 +236,6 @@ class ApkServiceImpl implements ApkService {
         lastUpdateDate: DateTime.now().subtract(const Duration(days: 2)),
         targetSdkVersion: 34,
         installerPackageName: 'com.android.vending',
-        grantedPermissions: const [
-          'android.permission.INTERNET',
-          'android.permission.CAMERA',
-          'android.permission.RECORD_AUDIO',
-          'android.permission.READ_CONTACTS',
-        ],
-        declaredPermissions: const [
-          'android.permission.INTERNET',
-          'android.permission.CAMERA',
-          'android.permission.RECORD_AUDIO',
-          'android.permission.READ_CONTACTS',
-          'android.permission.ACCESS_FINE_LOCATION',
-        ],
       ),
       ApkModel(
         id: 'com.spotify.music',
@@ -280,15 +249,6 @@ class ApkServiceImpl implements ApkService {
         lastUpdateDate: DateTime.now().subtract(const Duration(days: 5)),
         targetSdkVersion: 34,
         installerPackageName: 'com.transsion.phoenix',
-        grantedPermissions: const [
-          'android.permission.INTERNET',
-          'android.permission.POST_NOTIFICATIONS',
-        ],
-        declaredPermissions: const [
-          'android.permission.INTERNET',
-          'android.permission.POST_NOTIFICATIONS',
-          'android.permission.ACCESS_NETWORK_STATE',
-        ],
       ),
       if (includeSystemApps)
         ApkModel(
@@ -303,13 +263,6 @@ class ApkServiceImpl implements ApkService {
           targetSdkVersion: 34,
           isSystemApp: true,
           installerPackageName: 'com.google.android.packageinstaller',
-          grantedPermissions: const [
-            'android.permission.WRITE_SETTINGS',
-          ],
-          declaredPermissions: const [
-            'android.permission.WRITE_SETTINGS',
-            'android.permission.MANAGE_USERS',
-          ],
         ),
     ];
     return List.unmodifiable(list);
