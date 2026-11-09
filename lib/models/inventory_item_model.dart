@@ -15,6 +15,11 @@ class InventoryItemModel {
   final int sizeInBytes;
   final int targetSdkVersion;
   final String installerPackageName;
+  final String installerDisplayName;
+  final String filePath;
+  final bool isSystemApp;
+  final List<String> declaredPermissions;
+  final List<String> grantedPermissions;
   final DateTime installedAt;
   final DateTime? lastUpdatedAt;
   final DateTime? syncedAt;
@@ -31,10 +36,30 @@ class InventoryItemModel {
     required this.sizeInBytes,
     required this.targetSdkVersion,
     this.installerPackageName = '',
+    this.installerDisplayName = '',
+    this.filePath = '',
+    this.isSystemApp = false,
+    this.declaredPermissions = const [],
+    this.grantedPermissions = const [],
     required this.installedAt,
     this.lastUpdatedAt,
     this.syncedAt,
   });
+
+  int get declaredPermissionsCount => declaredPermissions.length;
+  int get grantedPermissionsCount => grantedPermissions.length;
+  int get deniedPermissionsCount =>
+      (declaredPermissions.length - grantedPermissions.length).clamp(0, declaredPermissions.length);
+
+  /// Structure JSON complète détaillée des permissions pour la table Neon.
+  Map<String, dynamic> get permissionsPayload => {
+        'total_declared': declaredPermissionsCount,
+        'total_granted': grantedPermissionsCount,
+        'total_denied': deniedPermissionsCount,
+        'declared': declaredPermissions,
+        'granted': grantedPermissions,
+        'denied': declaredPermissions.where((p) => !grantedPermissions.contains(p)).toList(),
+      };
 
   /// Factory construisant un élément d'inventaire à partir d'un `ApkModel`.
   factory InventoryItemModel.fromApkModel(
@@ -54,6 +79,11 @@ class InventoryItemModel {
       sizeInBytes: apk.sizeInBytes,
       targetSdkVersion: apk.targetSdkVersion,
       installerPackageName: apk.installerPackageName,
+      installerDisplayName: apk.installerDisplayName,
+      filePath: apk.filePath,
+      isSystemApp: apk.isSystemApp,
+      declaredPermissions: apk.declaredPermissions,
+      grantedPermissions: apk.grantedPermissions,
       installedAt: apk.installDate,
       lastUpdatedAt: apk.lastUpdateDate,
       syncedAt: DateTime.now(),
@@ -100,6 +130,16 @@ class InventoryItemModel {
       synced = DateTime.tryParse(syncedRaw);
     }
 
+    final declaredRaw = json['declaredPermissions'] ?? json['declared_permissions'];
+    final declared = declaredRaw is List
+        ? declaredRaw.whereType<String>().map((e) => e.trim()).toList()
+        : const <String>[];
+
+    final grantedRaw = json['grantedPermissions'] ?? json['granted_permissions'];
+    final granted = grantedRaw is List
+        ? grantedRaw.whereType<String>().map((e) => e.trim()).toList()
+        : const <String>[];
+
     return InventoryItemModel(
       id: json['id'] is int ? json['id'] as int : null,
       deviceId: deviceId.trim(),
@@ -112,6 +152,11 @@ class InventoryItemModel {
       sizeInBytes: json['sizeInBytes'] ?? json['size_in_bytes'] ?? 0,
       targetSdkVersion: json['targetSdkVersion'] ?? json['target_sdk_version'] ?? 0,
       installerPackageName: (json['installerPackageName'] ?? json['installer_package_name'] ?? '').toString(),
+      installerDisplayName: (json['installerDisplayName'] ?? json['installer_display_name'] ?? '').toString(),
+      filePath: (json['filePath'] ?? json['file_path'] ?? '').toString(),
+      isSystemApp: json['isSystemApp'] == true || json['is_system_app'] == true,
+      declaredPermissions: declared,
+      grantedPermissions: granted,
       installedAt: installedAt,
       lastUpdatedAt: lastUpdate,
       syncedAt: synced,
@@ -119,7 +164,7 @@ class InventoryItemModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
+        if (id != null) 'id': id,
         'device_id': deviceId,
         'user_label': userLabel,
         'device_model': deviceModel,
@@ -130,6 +175,14 @@ class InventoryItemModel {
         'size_in_bytes': sizeInBytes,
         'target_sdk_version': targetSdkVersion,
         'installer_package_name': installerPackageName,
+        'installer_display_name': installerDisplayName,
+        'file_path': filePath,
+        'is_system_app': isSystemApp,
+        'declared_permissions': declaredPermissions,
+        'granted_permissions': grantedPermissions,
+        'permissions_payload': permissionsPayload,
+        'permissions_count': declaredPermissionsCount,
+        'granted_permissions_count': grantedPermissionsCount,
         'installed_at': installedAt.toIso8601String(),
         'last_updated_at': lastUpdatedAt?.toIso8601String(),
         'synced_at': syncedAt?.toIso8601String(),

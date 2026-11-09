@@ -15,9 +15,10 @@ Application Flutter moderne pour répertorier, filtrer et inspecter les applicat
 - **Récepteur d'événements système (`BroadcastReceiver`)** : Écoute passive et silencieuse de `PACKAGE_ADDED`, `PACKAGE_REMOVED` et `PACKAGE_REPLACED` avec rafraîchissement automatique en temps réel de l'inventaire sans surconsommation de batterie.
 - **Page dédiée d'inspection détaillée (`AppDetailsScreen`)** : Vue plein écran ergonomique pour une lisibilité maximale de toutes les informations techniques (package avec copie en 1 clic, version, build, SDK Android cible, source du magasin, chemin binaire APK copiable, dates d'installation et de mise à jour, taille exacte en octets) avec intégration du statut des permissions directement dans le cadre des informations techniques.
 - **Page dédiée d'audit des permissions (`AppPermissionsScreen`)** : Accessible via le bouton *Voir les permissions*, affiche un écran complet avec récapitulatif chiffré (déclarées, accordées, refusées), sélecteur de filtrage dynamique (*Toutes*, *Accordées*, *Refusées*), barre de recherche textuelle et raccourci direct vers les réglages système Android.
-- **Attribution atomique des utilisateurs & Modèles d'appareils** :
-  - Identification automatique de chaque terminal connecté (`User 1`, `User 2`, etc.) via séquence PostgreSQL `SERIAL` dans `registered_devices`.
-  - Détection native du fabricant et modèle (`Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`).
+- **Synchronisation backend Neon exhaustive (PostgreSQL)** :
+  - **Table `device_inventory` enrichie** : Sauvegarde en temps réel de toutes les métadonnées de chaque application : package, nom, version, build, niveau SDK, taille en octets, dates, chemin binaire APK (`file_path`), statut système (`is_system_app`), nom d'affichage de la source (`installer_display_name`), tableaux complets des permissions (`declared_permissions`, `granted_permissions`) et payload JSONB structuré (`permissions_payload`, `permissions_count`, `granted_permissions_count`).
+  - **Table relationnelle `device_app_permissions`** : Table normalisée enregistrant granularité par granularité chaque permission par terminal et package avec son état accordé/refusé (`is_granted`).
+  - **Mise à jour automatique (UPSERT ACID)** : Synchronisation automatique en arrière-plan sans blocage UI, préservant l'intégrité relationnelle et les données existantes.
 - **Consentement utilisateur & Personnalisation du profil** :
   - Parcours d'onboarding immersif en 2 étapes : consentement RGPD / Google Play puis saisie d'un pseudonyme / nom d'utilisateur personnalisé.
   - Persistance locale dans `SharedPreferences` : dès la validation initiale, les lancements ultérieurs ouvrent directement le tableau de bord sans ré-afficher l'onboarding.
