@@ -43,13 +43,20 @@ abstract final class AppStrings {
   static const String actionRefresh = 'Actualiser';
   static const String actionRevokeConsent = 'Révoquer l\'autorisation';
 
-  // Écran Détails complets
+  // Écran Détails complets & Permissions
   static const String detailsScreenTitle = 'Détails de l\'application';
   static const String technicalInfoTitle = 'Informations techniques';
   static const String permissionsTitle = 'Permissions de l\'application';
+  static const String permissionsScreenTitle = 'Permissions du package';
+  static const String actionViewPermissions = 'Voir les permissions';
   static const String packageCopied = 'Nom du package copié dans le presse-papiers.';
   static const String pathCopied = 'Chemin binaire APK copié dans le presse-papiers.';
   static const String managePermissionsInSettings = 'Gérer dans les paramètres système';
+  static const String allPermissions = 'Toutes';
+  static const String grantedPermissions = 'Accordées';
+  static const String deniedPermissions = 'Refusées';
+  static const String noPermissionsDeclared = 'Cette application ne demande aucune permission spécifique.';
+  static const String noPermissionsMatching = 'Aucune permission correspondante.';
 
   // Badges & Types
   static const String badgeSystem = 'SYSTÈME';

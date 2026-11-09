@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:apk_list/constants/app_strings.dart';
 import 'package:apk_list/dashboard/app_details_screen.dart';
+import 'package:apk_list/dashboard/app_permissions_screen.dart';
 import 'package:apk_list/dashboard/widgets/app_list_item.dart';
 import 'package:apk_list/models/apk_model.dart';
 
@@ -19,6 +20,15 @@ void main() {
     targetSdkVersion: 34,
     isSystemApp: false,
     installerPackageName: 'com.android.vending',
+    declaredPermissions: const [
+      'android.permission.INTERNET',
+      'android.permission.CAMERA',
+      'android.permission.RECORD_AUDIO',
+    ],
+    grantedPermissions: const [
+      'android.permission.INTERNET',
+      'android.permission.CAMERA',
+    ],
   );
 
   testWidgets('Ouvre AppDetailsScreen lors du clic sur la carte ou le bouton détails', (
@@ -39,20 +49,16 @@ void main() {
       ),
     );
 
-    // Vérifie la présence de l'élément dans la liste
     expect(find.text('Super Application'), findsOneWidget);
 
-    // Clic sur le bouton d'information "Voir les détails"
     await tester.tap(find.byIcon(Icons.info_outline_rounded));
     await tester.pumpAndSettle();
 
-    // Vérifie que l'écran AppDetailsScreen est ouvert
     expect(find.byType(AppDetailsScreen), findsOneWidget);
     expect(find.text(AppStrings.detailsScreenTitle), findsOneWidget);
     expect(find.text('Super Application'), findsWidgets);
     expect(find.text('com.example.superapp'), findsWidgets);
 
-    // Test des actions depuis la page de détails
     await tester.tap(find.widgetWithText(FilledButton, AppStrings.actionLaunch));
     expect(launched, isTrue);
 
@@ -60,17 +66,15 @@ void main() {
     expect(settingsOpened, isTrue);
   });
 
-  testWidgets('Affiche correctement toutes les métadonnées techniques et la section sécurité', (
+  testWidgets('Affiche les informations techniques et permet d\'ouvrir la page des permissions', (
     WidgetTester tester,
   ) async {
-    bool settingsOpened = false;
-
     await tester.pumpWidget(
       MaterialApp(
         home: AppDetailsScreen(
           app: testApp,
           onLaunch: () {},
-          onSettings: () => settingsOpened = true,
+          onSettings: () {},
         ),
       ),
     );
@@ -88,13 +92,47 @@ void main() {
     expect(find.text('10/02/2026 à 14:30'), findsOneWidget);
     expect(find.text('01/03/2026 à 09:15'), findsOneWidget);
 
-    // Section autorisations système (délégation sécurisée sans scan lourd de packageInfo)
-    expect(find.text(AppStrings.permissionsTitle), findsOneWidget);
-    expect(find.text(AppStrings.managePermissionsInSettings), findsOneWidget);
+    // Ligne des permissions intégrée au cadre technique
+    expect(find.text('Permissions système'), findsOneWidget);
+    expect(find.text('2 accordée(s) sur 3 déclarée(s)'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, AppStrings.actionViewPermissions), findsOneWidget);
 
-    await tester.ensureVisible(find.text(AppStrings.managePermissionsInSettings));
+    // Clic sur "Voir les permissions" ouvre la page dédiée AppPermissionsScreen
+    await tester.ensureVisible(find.widgetWithText(FilledButton, AppStrings.actionViewPermissions));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(AppStrings.managePermissionsInSettings));
-    expect(settingsOpened, isTrue);
+    await tester.tap(find.widgetWithText(FilledButton, AppStrings.actionViewPermissions));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppPermissionsScreen), findsOneWidget);
+    expect(find.text(AppStrings.permissionsTitle), findsOneWidget);
+  });
+
+  testWidgets('Affiche un libellé adéquat lorsque l\'application n\'a pas de permissions déclarées', (
+    WidgetTester tester,
+  ) async {
+    final minimalApp = ApkModel(
+      id: 'com.simple.app',
+      name: 'Simple App',
+      packageName: 'com.simple.app',
+      versionName: '1.0',
+      versionCode: 1,
+      sizeInBytes: 1024,
+      filePath: '',
+      installDate: DateTime(2026, 1, 1),
+      declaredPermissions: const [],
+      grantedPermissions: const [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppDetailsScreen(
+          app: minimalApp,
+          onLaunch: () {},
+          onSettings: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('Aucune permission demandée'), findsOneWidget);
   });
 }

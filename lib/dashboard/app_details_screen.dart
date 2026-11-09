@@ -5,9 +5,10 @@ import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../models/apk_model.dart';
+import 'app_permissions_screen.dart';
 
-/// Écran complet dédié à la consultation approfondie des métadonnées d'une application.
-class AppDetailsScreen extends StatefulWidget {
+/// Écran complet dédié à la consultation approfondie des métadonnées et caractéristiques d'une application.
+class AppDetailsScreen extends StatelessWidget {
   final ApkModel app;
   final VoidCallback onLaunch;
   final VoidCallback onSettings;
@@ -19,14 +20,7 @@ class AppDetailsScreen extends StatefulWidget {
     required this.onSettings,
   });
 
-  @override
-  State<AppDetailsScreen> createState() => _AppDetailsScreenState();
-}
-
-class _AppDetailsScreenState extends State<AppDetailsScreen> {
-  ApkModel get app => widget.app;
-
-  void _copyToClipboard(String text, String feedbackMessage) {
+  void _copyToClipboard(BuildContext context, String text, String feedbackMessage) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -114,12 +108,12 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: AppStrings.actionDetails,
-            onPressed: widget.onSettings,
+            onPressed: onSettings,
           ),
           IconButton(
             icon: const Icon(Icons.play_arrow_rounded),
             tooltip: AppStrings.actionLaunch,
-            onPressed: widget.onLaunch,
+            onPressed: onLaunch,
           ),
         ],
       ),
@@ -128,13 +122,11 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildAppHeaderCard(isDark),
+            _buildAppHeaderCard(context, isDark),
             const SizedBox(height: 16),
             _buildPrimaryActions(),
             const SizedBox(height: 20),
-            _buildTechnicalInfoSection(isDark),
-            const SizedBox(height: 20),
-            _buildPermissionsSection(isDark),
+            _buildTechnicalInfoSection(context, isDark),
             const SizedBox(height: 24),
           ],
         ),
@@ -142,7 +134,7 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
     );
   }
 
-  Widget _buildAppHeaderCard(bool isDark) {
+  Widget _buildAppHeaderCard(BuildContext context, bool isDark) {
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final secondaryTextColor =
@@ -179,7 +171,7 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                       ),
                       const SizedBox(height: 4),
                       InkWell(
-                        onTap: () => _copyToClipboard(app.packageName, AppStrings.packageCopied),
+                        onTap: () => _copyToClipboard(context, app.packageName, AppStrings.packageCopied),
                         borderRadius: BorderRadius.circular(6),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -368,7 +360,7 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             ),
-            onPressed: widget.onLaunch,
+            onPressed: onLaunch,
           ),
         ),
         const SizedBox(width: 12),
@@ -382,14 +374,14 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            onPressed: widget.onSettings,
+            onPressed: onSettings,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTechnicalInfoSection(bool isDark) {
+  Widget _buildTechnicalInfoSection(BuildContext context, bool isDark) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -424,7 +416,7 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
               trailing: IconButton(
                 icon: const Icon(Icons.copy_rounded, size: 18),
                 tooltip: 'Copier le package',
-                onPressed: () => _copyToClipboard(app.packageName, AppStrings.packageCopied),
+                onPressed: () => _copyToClipboard(context, app.packageName, AppStrings.packageCopied),
               ),
             ),
             _buildDetailTile(
@@ -468,11 +460,83 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                 trailing: IconButton(
                   icon: const Icon(Icons.copy_rounded, size: 18),
                   tooltip: 'Copier le chemin binaire',
-                  onPressed: () => _copyToClipboard(app.filePath, AppStrings.pathCopied),
+                  onPressed: () => _copyToClipboard(context, app.filePath, AppStrings.pathCopied),
                 ),
               ),
+            _buildPermissionsTile(context),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPermissionsTile(BuildContext context) {
+    final granted = app.grantedPermissions.length;
+    final declared = app.declaredPermissions.length;
+    final valueText = declared == 0
+        ? 'Aucune permission demandée'
+        : '$granted accordée(s) sur $declared déclarée(s)';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(16),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.security_rounded, size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Permissions système',
+                      style: AppTypography.labelSmall.copyWith(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      valueText,
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 42),
+            child: FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => AppPermissionsScreen(
+                      app: app,
+                      onSettings: onSettings,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.shield_outlined, size: 16),
+              label: const Text(AppStrings.actionViewPermissions),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -517,55 +581,6 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
           ),
           ?trailing,
         ],
-      ),
-    );
-  }
-
-  Widget _buildPermissionsSection(bool isDark) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: isDark ? AppColors.cardBorderDark : AppColors.cardBorderLight,
-          width: 1.2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.security_rounded, size: 20, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    AppStrings.permissionsTitle,
-                    style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Afin d\'optimiser les performances de scan et de respecter la confidentialité, les autorisations ne sont pas lues en masse via le PackageManager. Vous pouvez inspecter et configurer les droits d\'accès accordés à cette application directement dans les paramètres système Android.',
-              style: AppTypography.bodySmall.copyWith(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.tune_rounded, size: 18),
-              label: const Text(AppStrings.managePermissionsInSettings),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                minimumSize: const Size.fromHeight(44),
-              ),
-              onPressed: widget.onSettings,
-            ),
-          ],
-        ),
       ),
     );
   }
